@@ -35,8 +35,9 @@
   </div>
   <script>
     const screenFrame = document.getElementById('game-screen');
+    const allowedScreens = ['title.html', 'lobby.html', 'game.html', 'requisition.html'];
     window.setScreen = function (path) {
-      if (!/^(title|lobby|game|requisition)\.html$/.test(path)) return;
+      if (!allowedScreens.includes(path)) return;
       screenFrame.src = path;
     };
     window.addEventListener('message', event => {
