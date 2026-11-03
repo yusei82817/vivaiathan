@@ -36,7 +36,7 @@
   <script>
     const screenFrame = document.getElementById('game-screen');
     window.setScreen = function (path) {
-      if (!/^(title|lobby|game)\.html$/.test(path)) return;
+      if (!/^(title|lobby|game|requisition)\.html$/.test(path)) return;
       screenFrame.src = path;
     };
     window.addEventListener('message', event => {
