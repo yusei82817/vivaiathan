@@ -38,6 +38,7 @@ h1 span { display:block; color:var(--cyan); }
       <p class="subtitle">THE WORLD WENT QUIET. THE DEAD DID NOT.<br>Form a squad, secure your perimeter, and make every supply run count. No rescue is coming.</p>
       <div class="menu-actions">
         <button class="btn primary" onclick="go('lobby.html')">Enter Operations <span aria-hidden="true">↗</span></button>
+        <button class="btn ghost" onclick="go('requisition.html')">Personnel Requisition</button>
         <button class="btn ghost" onclick="openPanel('settings')">System Settings</button>
       </div>
       <div style="margin-top:26px" class="eyebrow"><span class="status-dot"></span>All systems nominal</div>
@@ -107,7 +108,16 @@ h1 span { display:block; color:var(--cyan); }
   }
   requestAnimationFrame(frame);
 })();
-function go(screen){ if(parent && parent!==window && parent.setScreen) parent.setScreen(screen); else location.href=screen; }
+function go(screen){
+  const allowedScreens = ['title.html','lobby.html','game.html','requisition.html'];
+  if (!allowedScreens.includes(screen)) return;
+  if (window.parent !== window) {
+    if (typeof window.parent.setScreen === 'function') window.parent.setScreen(screen);
+    else window.parent.postMessage({ screen }, window.location.origin);
+  } else {
+    window.location.assign(screen);
+  }
+}
 function openPanel(id){const el=document.getElementById(id);el.hidden=false;el.style.display='grid';}
 function closePanel(){const el=document.getElementById('settings');el.hidden=true;el.style.display='none';}
 </script>
