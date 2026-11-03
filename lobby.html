@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VIVAIATHAN // Operations</title><link rel="stylesheet" href="ui.css">
+<style>
+.layout{max-width:1240px;margin:auto;min-height:calc(100vh - 116px);display:flex;flex-direction:column;gap:24px}
+.heading{display:flex;justify-content:space-between;align-items:end;gap:18px}
+h1{font:700 clamp(42px,7vw,76px)/.9 var(--display);margin:9px 0 0}
+.content{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,.7fr);gap:18px;flex:1}
+.server-panel,.operator-panel{padding:24px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.server{display:grid;grid-template-columns:1fr auto auto;gap:18px;align-items:center;padding:17px 14px;border-top:1px solid var(--line);transition:.16s}
+.server:hover{background:rgba(105,213,210,.045)}
+.server-name{font:600 22px var(--display);letter-spacing:.04em}
+.server-meta{color:var(--muted);font-size:10px;margin-top:5px;letter-spacing:.08em}
+.pill{font-size:9px;letter-spacing:.12em;padding:6px 9px;border:1px solid var(--line);color:#b7c6c9}
+.pill.open{color:var(--cyan);border-color:rgba(105,213,210,.35)}
+.ping{font:600 12px var(--body);color:#dce8e8}
+.operator-card{display:flex;align-items:center;gap:14px;padding:17px 0;border-top:1px solid var(--line)}
+.avatar{width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line-bright);color:var(--cyan);font:700 20px var(--display);background:rgba(105,213,210,.06)}
+.operator-name{font-weight:600;font-size:12px}.operator-role{font-size:10px;color:var(--muted);margin-top:5px}
+.empty-slot{border:1px dashed rgba(145,177,190,.2);padding:14px;color:#65777e;font-size:10px;letter-spacing:.12em;text-align:center;margin-top:10px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:760px){.content{grid-template-columns:1fr}.heading{align-items:start;flex-direction:column}.server-panel,.operator-panel{padding:17px}.server{grid-template-columns:1fr auto;gap:8px}.server .ping{display:none}}
+</style></head>
+<body><main class="screen"><div class="layout reveal">
+<header class="heading"><div><div class="eyebrow">Multiplayer // Deployment hub</div><h1 class="display">Operations</h1><p class="muted" style="font-size:12px">Select a field operation and assemble your squad.</p></div><div class="actions"><button class="btn ghost" onclick="go('title.html')">← Main Menu</button><button class="btn primary" onclick="deploy()">Quick Deploy</button></div></header>
+<div class="content">
+<section class="panel server-panel"><div class="corner-mark tl"></div><div class="section-title"><div><div class="eyebrow">Available sessions</div><h2 class="display" style="font-size:27px;margin:5px 0">Server Browser</h2></div><span class="pill">0 LIVE SESSIONS</span></div>
+<div class="server"><div><div class="server-name">THE OUTSKIRTS</div><div class="server-meta">CO-OP SURVIVAL // STANDARD</div></div><span class="pill">COMING SOON</span><span class="ping">-- ms</span></div>
+<div class="server"><div><div class="server-name">ABANDONED DISTRICT</div><div class="server-meta">SCAVENGE & EXTRACT // HARD</div></div><span class="pill">COMING SOON</span><span class="ping">-- ms</span></div>
+<div class="server"><div><div class="server-name">NORTH CHECKPOINT</div><div class="server-meta">ENDLESS SURVIVAL // NIGHT</div></div><span class="pill">COMING SOON</span><span class="ping">-- ms</span></div>
+<div class="rule" style="margin:22px 0 14px"></div><div class="eyebrow">Network notice</div><p class="muted" style="font-size:11px;line-height:1.8">Multiplayer matchmaking is not connected yet. Session listings are currently interface previews.</p>
+</section>
+<aside class="panel operator-panel"><div class="eyebrow">Your deployment</div><h2 class="display" style="font-size:27px;margin:5px 0 18px">Squad Status</h2>
+<div class="operator-card"><div class="avatar">01</div><div><div class="operator-name">OPERATOR 01</div><div class="operator-role">LOCAL PLAYER // HOST</div></div><span class="pill open" style="margin-left:auto">READY</span></div>
+<div class="empty-slot">SQUAD SLOT 02 // EMPTY</div><div class="empty-slot">SQUAD SLOT 03 // EMPTY</div><div class="empty-slot">SQUAD SLOT 04 // EMPTY</div>
+<div style="margin-top:25px"><div class="data-row"><span class="muted">MISSION STATUS</span><strong>STANDBY</strong></div><div class="data-row"><span class="muted">REGION</span><strong>SECTOR 07</strong></div></div>
+</aside></div>
+</div></main>
+<script>
+function go(s){if(parent&&parent.setScreen)parent.setScreen(s);else location.href=s;}
+function deploy(){go('game.html');}
+</script></body></html>
