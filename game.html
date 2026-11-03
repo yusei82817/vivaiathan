@@ -29,6 +29,15 @@
 </div><div class="weapon"><small>PRIMARY WEAPON</small><strong>UNARMED</strong><small>AMMO -- / --</small></div></div>
 </main>
 <script>
-function go(s){if(parent&&parent.setScreen)parent.setScreen(s);else location.href=s;}
+function go(screen){
+  const allowedScreens = ['title.html','lobby.html','game.html','requisition.html'];
+  if (!allowedScreens.includes(screen)) return;
+  if (window.parent !== window) {
+    if (typeof window.parent.setScreen === 'function') window.parent.setScreen(screen);
+    else window.parent.postMessage({ screen }, window.location.origin);
+  } else {
+    window.location.assign(screen);
+  }
+}
 let seconds=0;setInterval(()=>{seconds++;document.getElementById('clock').textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');},1000);
 </script></body></html>
