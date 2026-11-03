@@ -15,7 +15,14 @@ h1 span { display:block; color:var(--cyan); }
 .side-panel { padding:25px; max-width:390px; justify-self:end; width:100%; }
 .panel-head { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:10px; letter-spacing:.16em; }
 .signal { height:120px; margin:25px 0 20px; position:relative; overflow:hidden; background:linear-gradient(180deg,rgba(105,213,210,.08),transparent); border-bottom:1px solid var(--line); }
-.signal svg { width:100%; height:100%; }
+.signal svg { width:100%; height:100%; overflow:visible; }
+.signal::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(180deg,transparent 0 5px,rgba(105,213,210,.035) 6px 7px); }
+.scan-beam { animation: scan 3.8s linear infinite; }
+.scan-edge { animation: scan-line 3.8s linear infinite; }
+@keyframes scan { from { transform:translateX(0); } to { transform:translateX(390px); } }
+@keyframes scan-line { from { transform:translateX(0); } to { transform:translateX(390px); } }
+.panel-head span:last-child { animation: live-pulse 1.8s ease-in-out infinite; }
+@keyframes live-pulse { 0%,100% { opacity:1; text-shadow:0 0 8px rgba(105,213,210,.2); } 50% { opacity:.55; text-shadow:0 0 13px rgba(105,213,210,.8); } }
 .data-row { display:flex; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line); font-size:11px; }
 .data-row strong { color:#dbe8e9; font-weight:600; letter-spacing:.06em; }
 .footer-note { position:absolute; bottom:18px; left:clamp(22px,4vw,58px); color:#64767d; font-size:9px; letter-spacing:.18em; }
@@ -39,10 +46,15 @@ h1 span { display:block; color:var(--cyan); }
       <div class="corner-mark tl"></div><div class="corner-mark br"></div>
       <div class="panel-head"><span>TACTICAL NETWORK</span><span style="color:var(--cyan)">LIVE</span></div>
       <div class="signal">
-        <svg viewBox="0 0 340 120" preserveAspectRatio="none" aria-label="Network signal graph">
-          <defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#69d5d2" stop-opacity=".38"/><stop offset="1" stop-color="#69d5d2" stop-opacity="0"/></linearGradient></defs>
-          <path d="M0 83 L25 78 L43 85 L60 43 L77 72 L94 66 L112 77 L129 25 L145 62 L166 55 L183 74 L201 69 L220 36 L237 66 L255 61 L273 78 L291 49 L309 68 L340 58 L340 120 L0 120Z" fill="url(#fade)"/>
-          <path d="M0 83 L25 78 L43 85 L60 43 L77 72 L94 66 L112 77 L129 25 L145 62 L166 55 L183 74 L201 69 L220 36 L237 66 L255 61 L273 78 L291 49 L309 68 L340 58" fill="none" stroke="#69d5d2" stroke-width="1.5"/>
+        <svg id="network-wave" viewBox="0 0 340 120" preserveAspectRatio="none" aria-label="Live tactical network signal">
+          <defs>
+            <linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#69d5d2" stop-opacity=".4"/><stop offset="1" stop-color="#69d5d2" stop-opacity="0"/></linearGradient>
+            <linearGradient id="scan-fade" x1="0" x2="1"><stop stop-color="#69d5d2" stop-opacity="0"/><stop offset=".5" stop-color="#69d5d2" stop-opacity=".22"/><stop offset="1" stop-color="#69d5d2" stop-opacity="0"/></linearGradient>
+          </defs>
+          <path id="wave-fill" fill="url(#fade)"/>
+          <path id="wave-line" fill="none" stroke="#69d5d2" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>
+          <rect class="scan-beam" x="-50" y="0" width="50" height="120" fill="url(#scan-fade)"/>
+          <line class="scan-edge" x1="0" y1="0" x2="0" y2="120" stroke="#a5ffff" stroke-opacity=".6"/>
         </svg>
       </div>
       <div class="data-row"><span class="muted">REGION</span><strong>SECTOR 07 / UNKNOWN</strong></div>
@@ -64,6 +76,37 @@ h1 span { display:block; color:var(--cyan); }
   </section>
 </div>
 <script>
+// Procedural heartbeat-like telemetry waveform.
+(function animateNetworkSignal(){
+  const line = document.getElementById('wave-line');
+  const fill = document.getElementById('wave-fill');
+  if (!line || !fill) return;
+  let start = null;
+  const width = 340, baseline = 78, samples = 170;
+  function frame(now){
+    if (start === null) start = now;
+    const t = (now - start) * 0.001;
+    const shift = t * 42;
+    const pts = [];
+    for(let i=0;i<=samples;i++){
+      const x = width * i / samples;
+      const phase = ((x - shift) % 92 + 92) % 92;
+      let y = baseline + Math.sin((x * .075) + t * 2.1) * 2.3 + Math.sin((x * .19) - t * 1.4) * 1.1;
+      // Compact P-QRS-T style pulse, repeated along the scrolling trace.
+      if(phase > 17 && phase < 23) y -= (phase - 17) / 6 * 8;
+      else if(phase >= 23 && phase < 27) y -= 8 + (phase - 23) / 4 * 43;
+      else if(phase >= 27 && phase < 31) y -= 51 - (phase - 27) / 4 * 61;
+      else if(phase >= 31 && phase < 37) y += 10 - (phase - 31) / 6 * 10;
+      else if(phase >= 43 && phase < 55) y -= Math.sin((phase - 43) / 12 * Math.PI) * 10;
+      pts.push([x, Math.max(17, Math.min(105, y))]);
+    }
+    const d = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+    line.setAttribute('d',d);
+    fill.setAttribute('d',d+' L '+width+' 120 L 0 120 Z');
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 function go(screen){ if(parent && parent!==window && parent.setScreen) parent.setScreen(screen); else location.href=screen; }
 function openPanel(id){const el=document.getElementById(id);el.hidden=false;el.style.display='grid';}
 function closePanel(){const el=document.getElementById('settings');el.hidden=true;el.style.display='none';}
