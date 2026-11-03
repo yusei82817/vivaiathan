@@ -38,6 +38,15 @@ h1{font:700 clamp(42px,7vw,76px)/.9 var(--display);margin:9px 0 0}
 </aside></div>
 </div></main>
 <script>
-function go(s){if(parent&&parent.setScreen)parent.setScreen(s);else location.href=s;}
+function go(screen){
+  const allowedScreens = ['title.html','lobby.html','game.html','requisition.html'];
+  if (!allowedScreens.includes(screen)) return;
+  if (window.parent !== window) {
+    if (typeof window.parent.setScreen === 'function') window.parent.setScreen(screen);
+    else window.parent.postMessage({ screen }, window.location.origin);
+  } else {
+    window.location.assign(screen);
+  }
+}
 function deploy(){go('game.html');}
 </script></body></html>
