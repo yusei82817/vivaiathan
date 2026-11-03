@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VIVAIATHAN // Main Menu</title><link rel="stylesheet" href="ui.css">
+<style>
+.hero { min-height:calc(100vh - 116px); display:grid; grid-template-columns:minmax(0,1.15fr) minmax(260px,.65fr); align-items:center; gap:clamp(28px,6vw,100px); max-width:1320px; margin:auto; }
+.hero-copy { position:relative; z-index:1; }
+.kicker { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+.kicker-line { width:42px; height:1px; background:var(--cyan); }
+h1 { margin:0; font:800 clamp(64px,11vw,150px)/.78 var(--display); letter-spacing:.015em; text-shadow:0 12px 45px rgba(0,0,0,.6); }
+h1 span { display:block; color:var(--cyan); }
+.subtitle { margin:28px 0 0; color:#a4b5ba; max-width:510px; font-size:13px; line-height:1.9; letter-spacing:.035em; }
+.menu-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:34px; }
+.side-panel { padding:25px; max-width:390px; justify-self:end; width:100%; }
+.panel-head { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:10px; letter-spacing:.16em; }
+.signal { height:120px; margin:25px 0 20px; position:relative; overflow:hidden; background:linear-gradient(180deg,rgba(105,213,210,.08),transparent); border-bottom:1px solid var(--line); }
+.signal svg { width:100%; height:100%; }
+.data-row { display:flex; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line); font-size:11px; }
+.data-row strong { color:#dbe8e9; font-weight:600; letter-spacing:.06em; }
+.footer-note { position:absolute; bottom:18px; left:clamp(22px,4vw,58px); color:#64767d; font-size:9px; letter-spacing:.18em; }
+@media(max-width:800px){.hero{grid-template-columns:1fr;align-content:center;padding:32px 0 55px}.side-panel{justify-self:start;max-width:100%;padding:18px}.signal{height:70px;margin:14px 0}.hero{gap:28px}h1{font-size:clamp(62px,16vw,110px)}}
+</style>
+</head>
+<body>
+<main class="screen">
+  <div class="hero">
+    <section class="hero-copy reveal">
+      <div class="kicker"><span class="kicker-line"></span><span class="eyebrow">Survival protocol // 001</span></div>
+      <h1 class="display">Beyond<span>the Fall.</span></h1>
+      <p class="subtitle">THE WORLD WENT QUIET. THE DEAD DID NOT.<br>Form a squad, secure your perimeter, and make every supply run count. No rescue is coming.</p>
+      <div class="menu-actions">
+        <button class="btn primary" onclick="go('lobby.html')">Enter Operations <span aria-hidden="true">↗</span></button>
+        <button class="btn ghost" onclick="openPanel('settings')">System Settings</button>
+      </div>
+      <div style="margin-top:26px" class="eyebrow"><span class="status-dot"></span>All systems nominal</div>
+    </section>
+    <aside class="panel side-panel reveal" style="animation-delay:.12s">
+      <div class="corner-mark tl"></div><div class="corner-mark br"></div>
+      <div class="panel-head"><span>TACTICAL NETWORK</span><span style="color:var(--cyan)">LIVE</span></div>
+      <div class="signal">
+        <svg viewBox="0 0 340 120" preserveAspectRatio="none" aria-label="Network signal graph">
+          <defs><linearGradient id="fade" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#69d5d2" stop-opacity=".38"/><stop offset="1" stop-color="#69d5d2" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0 83 L25 78 L43 85 L60 43 L77 72 L94 66 L112 77 L129 25 L145 62 L166 55 L183 74 L201 69 L220 36 L237 66 L255 61 L273 78 L291 49 L309 68 L340 58 L340 120 L0 120Z" fill="url(#fade)"/>
+          <path d="M0 83 L25 78 L43 85 L60 43 L77 72 L94 66 L112 77 L129 25 L145 62 L166 55 L183 74 L201 69 L220 36 L237 66 L255 61 L273 78 L291 49 L309 68 L340 58" fill="none" stroke="#69d5d2" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="data-row"><span class="muted">REGION</span><strong>SECTOR 07 / UNKNOWN</strong></div>
+      <div class="data-row"><span class="muted">THREAT LEVEL</span><strong style="color:var(--amber)">ELEVATED</strong></div>
+      <div class="data-row"><span class="muted">OPERATORS ONLINE</span><strong>-- / 16</strong></div>
+      <div class="data-row"><span class="muted">BUILD</span><strong>0.0.1 PRE-ALPHA</strong></div>
+    </aside>
+  </div>
+  <div class="footer-note">VIVAIATHAN // FIELD OPERATIONS DIVISION</div>
+</main>
+<div id="settings" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:5;display:none;place-items:center;padding:20px">
+  <section class="panel" style="width:min(440px,100%);padding:28px">
+    <div class="eyebrow">System configuration</div><h2 class="display" style="font-size:32px;margin:8px 0 20px">Settings</h2>
+    <div class="data-row"><span class="muted">INTERFACE LANGUAGE</span><strong>ENGLISH</strong></div>
+    <div class="data-row"><span class="muted">DISPLAY MODE</span><strong>RESPONSIVE</strong></div>
+    <div class="data-row"><span class="muted">AUDIO</span><strong>NOT CONFIGURED</strong></div>
+    <p class="muted" style="font-size:11px;line-height:1.7">Additional settings will become available as the game systems are implemented.</p>
+    <button class="btn primary" onclick="closePanel()" style="width:100%;margin-top:12px">Close</button>
+  </section>
+</div>
+<script>
+function go(screen){ if(parent && parent!==window && parent.setScreen) parent.setScreen(screen); else location.href=screen; }
+function openPanel(id){const el=document.getElementById(id);el.hidden=false;el.style.display='grid';}
+function closePanel(){const el=document.getElementById('settings');el.hidden=true;el.style.display='none';}
+</script>
+</body></html>
