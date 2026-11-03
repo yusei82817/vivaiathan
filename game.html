@@ -176,7 +176,7 @@ function makeEnemy(){
   const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.42,3,7),dark);leg.position.set(side*.16,.37,0);leg.castShadow=true;group.add(leg);
   const eyeMesh=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),eye);eyeMesh.position.set(side*.09,1.66,.2);group.add(eyeMesh);
  }
- group.position.set(rand(-ARENA+4,ARENA-4),0,rand(-ARENA+4,ARENA-4));
+ const angle=rand(0,Math.PI*2),distance=rand(18,25);group.position.set(clamp(camera.position.x+Math.cos(angle)*distance,-ARENA+3,ARENA-3),0,clamp(camera.position.z+Math.sin(angle)*distance,-ARENA+3,ARENA-3));
  const hp=wave>=4?2:1;
  scene.add(group);
  return {group,hp,speed:rand(1.05,1.5)+wave*.12,attack:rand(.1,.6),phase:rand(0,6.28)};
@@ -277,7 +277,7 @@ function animate(now){
 function pointerLook(e){if(document.pointerLockElement===canvas){yaw-=e.movementX*.0022;pitch=clamp(pitch-e.movementY*.0022,-1.35,1.35)}}
 document.addEventListener('pointerlockchange',()=>{$('notice').textContent=document.pointerLockElement===canvas?'WASD MOVE / MOUSE LOOK + FIRE / R RELOAD / SHIFT SPRINT':'CLICK FIELD TO CAPTURE MOUSE // ESC TO RELEASE'});
 document.addEventListener('mousemove',pointerLook);
-canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});
+canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});\ncanvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&active){if(!document.pointerLockElement)requestMouseLock();else fire()}});
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d','shift','r',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='r')reload()});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 window.addEventListener('blur',()=>{keys={}});
