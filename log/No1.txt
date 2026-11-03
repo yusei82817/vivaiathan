@@ -1,0 +1,281 @@
+VIVAIATHAN
+OPERATOR SYSTEM DESIGN
+LOG No. 001
+STATUS: INITIAL DESIGN SPECIFICATION
+
+============================================================
+1. CORE STRUCTURE
+============================================================
+
+Playable Operators are defined by two independent classifications:
+
+- ROLE: Defines the Operator's primary battlefield responsibility,
+  stat tendencies, and tactical contribution.
+- ATTRIBUTE: Defines the behavior of selected special abilities,
+  special equipment, and attribute-based effects.
+
+Each Operator has exactly one Role and one Attribute.
+Role and Attribute are independent; the same Role may exist with
+different Attributes, and the same Attribute may appear across
+different Roles.
+
+Neither Role nor Attribute should be treated as a rarity level.
+
+============================================================
+2. ROLES
+============================================================
+
+[ASSAULT]
+Purpose:
+  Frontline offense and reliable general combat.
+
+Strengths:
+  - Strong weapon handling and sustained combat performance.
+  - Good balance of mobility and offensive capability.
+  - Suitable for players who engage threats directly.
+
+Limitations:
+  - Limited healing, reconnaissance, and deployment utility.
+  - Should not outperform specialist Roles in their own fields.
+
+Design direction:
+  An accessible, flexible combat Operator. Strong in direct
+  engagements without becoming the best choice for every situation.
+
+
+[RECON]
+Purpose:
+  Reconnaissance, threat identification, and precision combat.
+
+Strengths:
+  - Detects or highlights threats and important targets.
+  - Can mark targets to support the whole squad.
+  - Excels at precision attacks and identifying weak points.
+
+Limitations:
+  - Lower durability or weaker sustained close-range performance.
+  - Information skills should require positioning, timing, or cooldowns.
+
+Design direction:
+  Creates advantages before and during engagements through
+  information and accuracy rather than raw durability.
+
+
+[MEDIC]
+Purpose:
+  Recovery, emergency response, and squad sustainment.
+
+Strengths:
+  - Restores health or provides temporary protection.
+  - Improves recovery and may assist downed teammates.
+  - Helps the squad remain operational during long engagements.
+
+Limitations:
+  - Lower direct offensive specialization.
+  - Healing and revival effects must have clear cooldowns or resource costs.
+  - Must not make the squad effectively immortal.
+
+Design direction:
+  Provides meaningful recovery without replacing careful play
+  or making damage irrelevant.
+
+
+[ENGINEER]
+Purpose:
+  Field preparation, deployable equipment, and area control.
+
+Strengths:
+  - Deploys traps, defensive devices, or automated equipment.
+  - Improves barricades and other defensive structures.
+  - Can provide ammunition or repair support if those systems are added.
+
+Limitations:
+  - Strongest when given time and a suitable position.
+  - Deployables should have limits such as quantity, durability,
+    ammunition, or cooldown.
+  - Less effective when forced to move constantly.
+
+Design direction:
+  Controls the battlefield through preparation and equipment,
+  not through unrestricted damage output.
+
+
+[DEFENDER]
+Purpose:
+  Frontline protection, damage mitigation, and crowd control.
+
+Strengths:
+  - Can reduce incoming damage or protect nearby teammates.
+  - Excels at holding narrow routes and protecting objectives.
+  - Can interrupt, stagger, or redirect groups of enemies.
+
+Limitations:
+  - Lower mobility or slower weapon handling.
+  - Protection effects must not provide permanent invulnerability.
+  - Should control threats rather than eliminate every threat alone.
+
+Design direction:
+  Keeps the squad and its position intact, creating room for
+  other Roles to perform their jobs.
+
+
+============================================================
+3. ATTRIBUTES
+============================================================
+
+Attribute effects primarily apply to Operator abilities and
+equipment explicitly designed to use that Attribute. Standard
+firearms do not automatically inherit an Operator's Attribute.
+
+[KINETIC]
+Theme:
+  Conventional physical force and dependable performance.
+
+Effects:
+  - No special status effect by default.
+  - Stable and broadly useful against ordinary targets.
+  - Serves as the baseline for comparing other Attributes.
+
+Design role:
+  Consistency and reliability rather than a specialized counter.
+
+
+[THERMAL]
+Theme:
+  Heat, ignition, and high-temperature damage.
+
+Effects:
+  - Can inflict a burn effect that deals damage over time.
+  - Can be particularly effective against targets that regenerate
+    or rely on biological growth, if such enemy types are introduced.
+
+Limitations:
+  - Damage over time should not stack without a defined limit.
+  - Some targets may resist heat-based effects.
+
+Design role:
+  Sustained pressure and anti-regeneration specialization.
+
+
+[CRYO]
+Theme:
+  Cooling, freezing, and movement suppression.
+
+Effects:
+  - Reduces enemy movement speed.
+  - Repeated application may build toward a brief freeze or disable.
+  - Useful for controlling fast enemies and groups.
+
+Limitations:
+  - Control duration must be limited, especially against bosses.
+  - Repeated freezes should have diminishing returns or immunity windows.
+
+Design role:
+  Crowd control and safe repositioning, not unrestricted damage.
+
+
+[ELECTRIC]
+Theme:
+  Electrical discharge and neural disruption.
+
+Effects:
+  - Briefly interrupts or stuns affected enemies.
+  - Certain abilities may chain between nearby targets.
+  - Useful for disrupting groups or interrupting dangerous actions.
+
+Limitations:
+  - Stun duration must remain short and controlled.
+  - Bosses and elite enemies should have strong resistance to repeated
+    interruption.
+
+Design role:
+  Short interruptions and group disruption.
+
+
+[CORROSIVE]
+Theme:
+  Chemical degradation and weakening of protective layers.
+
+Effects:
+  - Applies corrosion that reduces target protection or defense.
+  - Can weaken hardened, plated, or heavily protected enemies.
+  - May deal limited damage over time if required by balance.
+
+Limitations:
+  - Defense reduction must have a cap and a clear duration.
+  - The effect should not make armor or defensive enemies irrelevant.
+
+Design role:
+  Weakening durable targets and creating openings for the squad.
+
+
+============================================================
+4. ROLE / ATTRIBUTE SEPARATION
+============================================================
+
+The two classifications must remain mechanically distinct.
+
+Examples:
+  - ASSAULT + THERMAL:
+    An offensive Operator whose special ability applies burn.
+  - RECON + ELECTRIC:
+    A scouting Operator whose marked-target ability can briefly
+    disrupt or expose threats.
+  - MEDIC + CRYO:
+    A support Operator whose defensive equipment slows approaching
+    enemies while assisting squad recovery.
+  - ENGINEER + CORROSIVE:
+    A deployable-equipment specialist who weakens hardened targets.
+  - DEFENDER + KINETIC:
+    A protection-focused Operator using reliable, non-elemental effects.
+
+These are combination examples, not finalized characters.
+
+============================================================
+5. BALANCE PRINCIPLES
+============================================================
+
+1. Every Operator must have one clear primary function.
+2. A Role should provide strengths and trade-offs, not universal
+   superiority over other Roles.
+3. An Attribute should add a tactical effect, not automatically
+   increase every weapon's damage.
+4. No single Role / Attribute combination should solve every situation.
+5. Status effects require limits, durations, cooldowns, or resistance
+   rules appropriate to their impact.
+6. Rarity should not directly determine whether an Operator is usable.
+   Higher rarity should favor distinctive or flexible kits rather than
+   simply making lower-rarity Operators obsolete.
+7. Squad composition should reward cooperation without forcing one
+   mandatory Role or Attribute.
+8. Character balance must be evaluated in actual gameplay, including
+   solo play and multiplayer environments.
+
+============================================================
+6. CURRENT DESIGN DECISIONS
+============================================================
+
+ROLES:
+  ASSAULT
+  RECON
+  MEDIC
+  ENGINEER
+  DEFENDER
+
+ATTRIBUTES:
+  KINETIC
+  THERMAL
+  CRYO
+  ELECTRIC
+  CORROSIVE
+
+OPERATOR CLASSIFICATION:
+  One Role + One Attribute per Operator.
+
+ATTRIBUTE APPLICATION:
+  Special abilities and designated equipment only by default.
+  Ordinary firearm damage remains based on the weapon itself.
+
+STATUS:
+  Initial system proposal. Numerical values, enemy resistances,
+  individual Operators, and final ability kits remain undecided.
