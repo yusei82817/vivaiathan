@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#83cce5">
+  <title>VIVAIATHAN // The Horizon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{color-scheme:dark;--ink:#102d3a;--pale:#e9f8ff;--cyan:#9cecff}
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden}
+    body{font-family:Inter,Arial,sans-serif;background:linear-gradient(#73bddd 0%,#d4f0f6 44%,#1d718f 45%,#07354d 100%);color:var(--pale)}
+    #ocean{position:fixed;inset:0;width:100%;height:100%;display:block}
+    .vignette{position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(5,31,48,.08),transparent 38%,rgba(3,23,37,.1) 66%,rgba(3,20,32,.52)),linear-gradient(90deg,rgba(4,29,44,.2),transparent 60%)}
+    .topline{position:fixed;top:0;left:0;right:0;padding:26px clamp(22px,5vw,76px);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.22);text-shadow:0 1px 12px rgba(0,30,50,.25)}
+    .brand{font:700 19px 'Barlow Condensed',sans-serif;letter-spacing:.24em}
+    .brand small{display:block;font:600 8px Inter,sans-serif;letter-spacing:.28em;margin-top:4px;opacity:.8}
+    .coordinates{font:600 9px Inter,sans-serif;letter-spacing:.18em;text-align:right;line-height:1.8}
+    .hero{position:fixed;left:clamp(22px,9vw,140px);bottom:clamp(64px,13vh,140px);max-width:760px;text-shadow:0 3px 22px rgba(0,27,43,.35);animation:rise 1.2s ease both}
+    .eyebrow{font-size:10px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#d8f6ff}
+    .eyebrow:before{content:"";display:inline-block;width:34px;height:1px;background:#c7f1ff;vertical-align:middle;margin-right:13px}
+    h1{font:800 clamp(64px,11vw,142px)/.82 'Barlow Condensed',Impact,sans-serif;letter-spacing:.025em;margin:22px 0 18px}
+    h1 span{display:block;color:#c9f4ff}
+    .subtitle{font-size:clamp(11px,1.2vw,14px);letter-spacing:.12em;line-height:1.9;color:rgba(241,251,255,.9);max-width:480px}
+    .actions{display:flex;align-items:center;gap:22px;margin-top:34px}
+    .enter{position:relative;min-width:190px;height:54px;padding:0 27px;border:1px solid rgba(231,250,255,.85);background:rgba(8,51,71,.38);backdrop-filter:blur(12px);color:white;font:700 11px Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:.25s}
+    .enter:after{content:"↗";font-size:17px;margin-left:18px}
+    .enter:hover{background:rgba(210,244,255,.22);border-color:white;transform:translateY(-2px)}
+    .build{font-size:9px;letter-spacing:.16em;color:rgba(237,250,255,.78)}
+    .bottomline{position:fixed;bottom:22px;left:clamp(22px,5vw,76px);right:clamp(22px,5vw,76px);display:flex;justify-content:space-between;gap:15px;font-size:8px;letter-spacing:.2em;color:rgba(231,248,255,.72);text-shadow:0 1px 8px rgba(0,20,35,.4)}
+    .loading{position:fixed;inset:0;display:grid;place-items:center;background:#8bc9dc;color:#12384b;font-size:10px;letter-spacing:.24em;transition:opacity .8s;pointer-events:none}
+    .loading.done{opacity:0}
+    .loading span:after{content:"";display:inline-block;width:24px;height:1px;background:#12384b;margin-left:12px;vertical-align:middle;animation:load 1s infinite alternate}
+    @keyframes load{from{transform:scaleX(.2);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}
+    @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:650px){.topline{padding:18px 20px}.coordinates{font-size:8px}.hero{left:22px;right:22px;bottom:100px}h1{font-size:clamp(62px,17vw,100px)}.actions{gap:14px;flex-wrap:wrap}.bottomline{font-size:7px;bottom:12px}.enter{height:50px}.subtitle{max-width:360px}}
+    @media(prefers-reduced-motion:reduce){.hero{animation:none}.enter{transition:none}}
+  </style>
+</head>
+<body>
+  <canvas id="ocean" aria-label="A sunlit three-dimensional ocean"></canvas>
+  <div class="vignette"></div>
+  <header class="topline">
+    <div class="brand">VIVAIATHAN<small>INDEPENDENT SURVIVAL PROJECT</small></div>
+    <div class="coordinates">OPEN WATER // 34° N<br>WEATHER: CLEAR</div>
+  </header>
+  <main class="hero">
+    <div class="eyebrow">A world beyond the shoreline</div>
+    <h1>THE LAST<span>HORIZON.</span></h1>
+    <div class="subtitle">A new world waits beyond the horizon.<br>Prepare yourself. The journey begins here.</div>
+    <div class="actions">
+      <button class="enter" id="enter">Enter Experience</button>
+      <span class="build">PRE-ALPHA // BUILD 0.0.1</span>
+    </div>
+  </main>
+  <footer class="bottomline"><span>VIVAIATHAN SYSTEMS</span><span>THE SEA IS NEVER STILL</span><span>SCROLL NOT REQUIRED // 3D ENVIRONMENT</span></footer>
+  <div class="loading" id="loading"><span>INITIALIZING OCEAN SYSTEM</span></div>
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+    import { Water } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Water.js';
+    import { Sky } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Sky.js';
+
+    const canvas = document.getElementById('ocean');
+    const loading = document.getElementById('loading');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 20000);
+    camera.position.set(0, 17, 82);
+    camera.lookAt(0, 3, -100);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.72;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const sky = new Sky();
+    sky.scale.setScalar(10000);
+    scene.add(sky);
+    const skyUniforms = sky.material.uniforms;
+    skyUniforms['turbidity'].value = 7;
+    skyUniforms['rayleigh'].value = 2.4;
+    skyUniforms['mieCoefficient'].value = 0.006;
+    skyUniforms['mieDirectionalG'].value = 0.82;
+
+    const sun = new THREE.Vector3();
+    const phi = THREE.MathUtils.degToRad(82);
+    const theta = THREE.MathUtils.degToRad(205);
+    sun.setFromSphericalCoords(1, phi, theta);
+    skyUniforms['sunPosition'].value.copy(sun);
+
+    const waterNormals = new THREE.TextureLoader().load(
+      'https://threejs.org/examples/textures/waternormals.jpg',
+      () => { loading.classList.add('done'); },
+      undefined,
+      () => { loading.classList.add('done'); }
+    );
+    waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+
+    const water = new Water(new THREE.PlaneGeometry(12000, 12000), {
+      textureWidth: 768,
+      textureHeight: 768,
+      waterNormals,
+      sunDirection: sun.clone().normalize(),
+      sunColor: 0xffffff,
+      waterColor: 0x07516c,
+      distortionScale: 4.2,
+      fog: false,
+      alpha: 1
+    });
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = 0;
+    scene.add(water);
+
+    const ambient = new THREE.HemisphereLight(0xd9f5ff, 0x18394a, 0.65);
+    scene.add(ambient);
+    const sunlight = new THREE.DirectionalLight(0xffe6c2, 2.2);
+    sunlight.position.copy(sun).multiplyScalar(500);
+    scene.add(sunlight);
+
+    const clock = new THREE.Clock();
+    const baseX = camera.position.x;
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      water.material.uniforms['time'].value += Math.min(clock.getDelta(), 0.04);
+      camera.position.x = baseX + Math.sin(t * 0.11) * 1.2;
+      camera.position.y = 17 + Math.sin(t * 0.18) * 0.45;
+      camera.lookAt(camera.position.x * 0.15, 3, -100);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    document.getElementById('enter').addEventListener('click', () => {
+      window.location.href = 'freme.html';
+    });
+    setTimeout(() => loading.classList.add('done'), 5000);
+  </script>
+</body>
+</html>
