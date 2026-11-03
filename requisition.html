@@ -109,7 +109,16 @@ const roster=[
 ];
 let orders=24;
 const balance=document.getElementById('balance');
-function go(screen){if(parent&&parent!==window&&parent.setScreen)parent.setScreen(screen);else location.href=screen;}
+function go(screen){
+  const allowedScreens = ['title.html','lobby.html','game.html','requisition.html'];
+  if (!allowedScreens.includes(screen)) return;
+  if (window.parent !== window) {
+    if (typeof window.parent.setScreen === 'function') window.parent.setScreen(screen);
+    else window.parent.postMessage({ screen }, window.location.origin);
+  } else {
+    window.location.assign(screen);
+  }
+}
 function draw(){balance.textContent=orders;document.getElementById('singleBtn').disabled=orders<1;document.getElementById('tenBtn').disabled=orders<10;}
 function pick(){const total=roster.reduce((sum,item)=>sum+item.weight,0);let roll=Math.random()*total;for(const item of roster){roll-=item.weight;if(roll<0)return item;}return roster[roster.length-1];}
 function recruit(count){if(orders<count)return;orders-=count;draw();const found=Array.from({length:count},pick);const results=document.getElementById('results');results.innerHTML='';for(const item of found){const card=document.createElement('article');card.className='result-card '+item.rarity.toLowerCase();const rarity=document.createElement('div');rarity.className='result-rarity';rarity.textContent=item.rarity+' PERSONNEL';const name=document.createElement('div');name.className='result-name';name.textContent=item.name;const meta=document.createElement('div');meta.className='result-meta';meta.textContent=item.role+'  /  '+item.attribute;card.append(rarity,name,meta);results.append(card);}document.getElementById('resultTitle').textContent=count===1?'Intake Result':'Squad Intake Results';document.getElementById('resultNote').textContent='Orders remaining: '+orders+'. Simulation results only. Reloading this page resets the demo balance.';document.getElementById('resultModal').classList.add('open');}
