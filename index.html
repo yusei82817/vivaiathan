@@ -133,8 +133,9 @@
     const baseX = camera.position.x;
     function animate() {
       requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-      water.material.uniforms['time'].value += Math.min(clock.getDelta(), 0.04);
+      const delta = Math.min(clock.getDelta(), 0.04);
+      const t = clock.elapsedTime;
+      water.material.uniforms['time'].value += delta;
       camera.position.x = baseX + Math.sin(t * 0.11) * 1.2;
       camera.position.y = 17 + Math.sin(t * 0.18) * 0.45;
       camera.lookAt(camera.position.x * 0.15, 3, -100);
