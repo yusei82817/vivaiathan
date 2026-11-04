@@ -178,7 +178,7 @@ function init3D(){
  box(playerWeapon,0,.13,-.05,.09,.035,.12,gripMat);
  const muzzleLight=new THREE.PointLight(0xffc47b,0,5);muzzleLight.position.set(0,.03,-.55);playerWeapon.add(muzzleLight);
  const flash=new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),new THREE.MeshBasicMaterial({color:0xffd08a}));flash.position.copy(muzzleLight.position);flash.visible=false;playerWeapon.add(flash);
- playerWeapon.userData={muzzleLight,flash,baseY:1.08,baseZ:-.3};updateCamera();
+ playerWeapon.userData={muzzleLight,flash,baseX:.38,baseY:1.08,baseZ:-.3};updateCamera();
  resize();
  worldReady=true;
 }
@@ -206,13 +206,13 @@ function updateCamera(){
  if(!camera||!playerRoot)return;
  if(firstPerson){
   if(avatarVisual)avatarVisual.visible=false;
-  camera.position.set(playerRoot.position.x,playerRoot.position.y+1.58,playerRoot.position.z);
+  camera.position.set(playerRoot.position.x+(playerMoving?Math.cos(avatarWalkTime*2)*.012:0),playerRoot.position.y+1.58+(playerMoving?Math.abs(Math.sin(avatarWalkTime*2))*.025:0),playerRoot.position.z);
   camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
-  if(playerWeapon&&playerWeapon.parent!==camera){playerWeapon.parent?.remove(playerWeapon);camera.add(playerWeapon);playerWeapon.position.set(.34,-.28,-.58);playerWeapon.userData.baseY=-.28;playerWeapon.userData.baseZ=-.58}
+  if(playerWeapon&&playerWeapon.parent!==camera){playerWeapon.parent?.remove(playerWeapon);camera.add(playerWeapon);playerWeapon.position.set(.34,-.28,-.58);playerWeapon.userData.baseX=.34;playerWeapon.userData.baseY=-.28;playerWeapon.userData.baseZ=-.58}
   return;
  }
  if(avatarVisual)avatarVisual.visible=true;
- if(playerWeapon&&playerWeapon.parent!==playerRoot){playerWeapon.parent?.remove(playerWeapon);playerRoot.add(playerWeapon);playerWeapon.position.set(.38,1.08,-.3);playerWeapon.userData.baseY=1.08;playerWeapon.userData.baseZ=-.3}
+ if(playerWeapon&&playerWeapon.parent!==playerRoot){playerWeapon.parent?.remove(playerWeapon);playerRoot.add(playerWeapon);playerWeapon.position.set(.38,1.08,-.3);playerWeapon.userData.baseX=.38;playerWeapon.userData.baseY=1.08;playerWeapon.userData.baseZ=-.3}
  const d=5.4,shoulder=.65,cp=Math.cos(pitch);
  const desired=new THREE.Vector3(playerRoot.position.x+Math.sin(yaw)*d*cp+Math.cos(yaw)*shoulder,playerRoot.position.y+2.35-Math.sin(pitch)*d,playerRoot.position.z+Math.cos(yaw)*d*cp-Math.sin(yaw)*shoulder);
  camera.position.lerp(desired,.28);
@@ -247,7 +247,7 @@ async function loadAvatar(file){
   cylinder(playerWeapon,0,.035,-.39,.035,.035,.22,ge,12).rotation.x=Math.PI/2;
   const light=new THREE.PointLight(0xffc47b,0,5);light.position.set(0,.03,-.55);playerWeapon.add(light);
   const flash=new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),new THREE.MeshBasicMaterial({color:0xffd08a}));flash.position.copy(light.position);flash.visible=false;playerWeapon.add(flash);
-  playerWeapon.userData={muzzleLight:light,flash,baseY:1.08,baseZ:-.3};
+  playerWeapon.userData={muzzleLight:light,flash,baseX:.38,baseY:1.08,baseZ:-.3};
  },err=>{console.error(err);$('avatarStatus').textContent='VRM LOAD FAILED // CHECK THE FILE';$('avatarStatus').classList.add('error')})}
  catch(err){console.error(err);$('avatarStatus').textContent='VRM LOAD FAILED // '+err.message;$('avatarStatus').classList.add('error')}
 }
@@ -461,7 +461,10 @@ function updateEffects(dt){
  if(!camera)return;
  const gun=playerWeapon;
  if(gun){const light=gun.userData.muzzleLight;light.intensity=Math.max(0,light.intensity-dt*100);if(light.intensity===0)gun.userData.flash.visible=false;
-  gun.position.y=gun.userData.baseY+(shotFlash>0?-.035:0);gun.position.z=gun.userData.baseZ+(shotFlash>0 ? .055 : 0);
+  const reloadPhase=reloadTimer>0?Math.sin(clamp(1-reloadTimer/1.15,0,1)*Math.PI):0;
+  gun.position.x=gun.userData.baseX+(playerMoving?Math.sin(avatarWalkTime)*.012:0);
+  gun.position.y=gun.userData.baseY+(playerMoving?Math.abs(Math.sin(avatarWalkTime*2))*.012:0)+(shotFlash>0?-.035:0);
+  gun.position.z=gun.userData.baseZ+(shotFlash>0 ? .055 : 0);gun.rotation.x=-reloadPhase*.42;gun.rotation.z=-reloadPhase*.16;
  }
  avatarWalkTime+=dt*(playerMoving?9:2);const swing=playerMoving?Math.sin(avatarWalkTime)*.48:Math.sin(avatarWalkTime)*.025;
  if(avatarVRM){
