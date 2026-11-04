@@ -268,7 +268,7 @@
     const moveSpeed = 48;
     const turnSpeed = 1.35;
     const controlKeys = new Set([
-      'KeyW', 'KeyA', 'KeyS', 'KeyD',
+      'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyX',
       'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
     ]);
 
@@ -327,6 +327,8 @@
         if (pressedKeys.has('KeyS')) movement.sub(forward);
         if (pressedKeys.has('KeyD')) movement.add(right);
         if (pressedKeys.has('KeyA')) movement.sub(right);
+        if (pressedKeys.has('KeyZ')) movement.y += 1;
+        if (pressedKeys.has('KeyX')) movement.y -= 1;
 
         if (movement.lengthSq() > 0) {
           movement.normalize().multiplyScalar(moveSpeed * delta);
