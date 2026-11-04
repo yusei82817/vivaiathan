@@ -240,19 +240,76 @@ async function loadAvatar(file){
 window.addEventListener('resize',resize);
 
 function makeEnemy(){
- const group=new THREE.Group();const skin=material(0x65756c),dark=material(0x293331),cloth=material(0x3a4541),eye= new THREE.MeshBasicMaterial({color:0xd27b61});
- const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.58,4,8),cloth);torso.position.y=1.02;torso.castShadow=true;group.add(torso);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.25,12,10),skin);head.position.set(0,1.62,-.02);head.castShadow=true;group.add(head);
- const jaw=new THREE.Mesh(new THREE.BoxGeometry(.24,.1,.2),dark);jaw.position.set(0,1.43,.03);group.add(jaw);
+ const root=new THREE.Group();
+ const rig=new THREE.Group();root.add(rig);
+ const skin=material(0x78877b),skinDark=material(0x46534b),cloth=material(0x303b38),clothLight=material(0x48534c),rubber=material(0x202725),rust=material(0x725b45),eyeMat=new THREE.MeshStandardMaterial({color:0xc77a60,emissive:0x35100b,emissiveIntensity:.45,roughness:.55});
+ const addMesh=(geo,mat,x,y,z,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;rig.add(m);return m};
+ const capsule=(x,y,z,r,len,mat,rx=0,rz=0)=>addMesh(new THREE.CapsuleGeometry(r,len,4,8),mat,x,y,z,rx,0,rz);
+ const sphere=(x,y,z,sx,sy,sz,mat)=>{const m=addMesh(new THREE.SphereGeometry(1,10,8),mat,x,y,z);m.scale.set(sx,sy,sz);return m};
+ // Uneven posture and layered torso give the silhouette a less toy-like anatomy.
+ const torso=capsule(0,1.04,0,.29,.48,cloth,-.12);
+ sphere(0,1.19,-.015,.34,.28,.19,clothLight);
+ sphere(0,.82,.005,.25,.22,.18,cloth);
+ capsule(0,1.43,0,.105,.12,skin);
+ // Collar, torn jacket lapels, straps and belt.
+ addMesh(new THREE.TorusGeometry(.16,.035,6,12),clothLight,0,1.42,-.005,Math.PI/2);
+ const lapelGeo=new THREE.BoxGeometry(.12,.42,.045);
+ addMesh(lapelGeo,clothLight,-.13,1.24,-.17,-.28,0,-.16);
+ addMesh(lapelGeo,clothLight,.13,1.24,-.17,-.18,0,.18);
+ addMesh(new THREE.BoxGeometry(.53,.09,.24),rubber,0,.79,0);
+ addMesh(new THREE.BoxGeometry(.11,.11,.035),rust,0,.79,-.135);
+ // Neck and asymmetrical damaged-looking head silhouette, without graphic gore.
+ capsule(0,1.56,0,.105,.12,skin);
+ sphere(0,1.78,-.015,.205,.245,.19,skin);
+ sphere(0,1.66,.065,.17,.105,.17,skinDark);
+ sphere(-.19,1.78,.015,.045,.09,.12,skinDark);
+ sphere(.19,1.79,.015,.04,.075,.11,skin);
+ // Brow ridge, recessed sockets, dull eyes, nose and crooked mouth.
+ addMesh(new THREE.BoxGeometry(.12,.045,.045),skinDark,-.078,1.82,.16,0,0,-.12);
+ addMesh(new THREE.BoxGeometry(.12,.045,.045),skinDark,.078,1.82,.16,0,0,.12);
+ sphere(-.075,1.79,.177,.033,.026,.018,eyeMat);
+ sphere(.075,1.79,.177,.03,.023,.018,eyeMat);
+ sphere(0,1.745,.185,.035,.065,.035,skinDark);
+ addMesh(new THREE.BoxGeometry(.13,.025,.025),rubber,0,1.685,.17,.08,0,0);
+ // Arms: shoulder caps, upper arms, elbows, forearms and hands.
+ const arms=[];
  for(const side of [-1,1]){
-  const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.105,.48,3,7),skin);arm.position.set(side*.43,1.02,-.04);arm.rotation.z=side*-.32;arm.castShadow=true;group.add(arm);
-  const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.42,3,7),dark);leg.position.set(side*.16,.37,0);leg.castShadow=true;group.add(leg);
-  const eyeMesh=new THREE.Mesh(new THREE.SphereGeometry(.035,6,6),eye);eyeMesh.position.set(side*.09,1.66,.2);group.add(eyeMesh);
+  const arm=new THREE.Group();arm.position.set(side*.36,1.36,0);rig.add(arm);
+  const upper=new THREE.Mesh(new THREE.CapsuleGeometry(.095,.31,4,8),cloth);upper.position.set(side*.035,-.22,0);upper.rotation.z=-side*.13;upper.castShadow=true;arm.add(upper);
+  const shoulder=new THREE.Mesh(new THREE.SphereGeometry(.125,10,8),clothLight);shoulder.position.set(side*.005,-.055,0);shoulder.castShadow=true;arm.add(shoulder);
+  const elbow=new THREE.Mesh(new THREE.SphereGeometry(.078,8,7),skinDark);elbow.position.set(side*.065,-.43,.015);arm.add(elbow);
+  const fore=new THREE.Mesh(new THREE.CapsuleGeometry(.072,.28,4,8),skin);fore.position.set(side*.085,-.59,.035);fore.rotation.z=-side*.08;fore.castShadow=true;arm.add(fore);
+  const cuff=new THREE.Mesh(new THREE.TorusGeometry(.075,.018,5,10),clothLight);cuff.position.set(side*.085,-.73,.035);cuff.rotation.x=Math.PI/2;arm.add(cuff);
+  const hand=new THREE.Mesh(new THREE.SphereGeometry(.085,8,7),skinDark);hand.position.set(side*.09,-.79,.055);arm.add(hand);
+  for(let f=0;f<3;f++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.018,.075,2,5),skin);finger.position.set(side*(.055+f*.03),-.88,.09);finger.rotation.x=-.25;arm.add(finger)}
+  arms.push(arm);
  }
- const angle=rand(0,Math.PI*2),distance=rand(18,25);group.position.set(clamp(playerRoot.position.x+Math.cos(angle)*distance,-ARENA+3,ARENA-3),0,clamp(playerRoot.position.z+Math.sin(angle)*distance,-ARENA+3,ARENA-3));
+ // Legs are separated at the hips and knees, with heavy worn boots.
+ const legs=[];
+ for(const side of [-1,1]){
+  const leg=new THREE.Group();leg.position.set(side*.15,.72,0);rig.add(leg);
+  const thigh=new THREE.Mesh(new THREE.CapsuleGeometry(.12,.31,4,8),cloth);thigh.position.y=-.19;thigh.castShadow=true;leg.add(thigh);
+  const knee=new THREE.Mesh(new THREE.SphereGeometry(.095,8,7),skinDark);knee.position.set(0,-.4,.015);leg.add(knee);
+  const shin=new THREE.Mesh(new THREE.CapsuleGeometry(.085,.29,4,8),clothLight);shin.position.set(0,-.59,0);shin.castShadow=true;leg.add(shin);
+  const boot=new THREE.Mesh(new THREE.BoxGeometry(.19,.15,.32),rubber);boot.position.set(0,-.82,-.055);boot.castShadow=true;leg.add(boot);
+  const sole=new THREE.Mesh(new THREE.BoxGeometry(.195,.035,.33),rust);sole.position.set(0,-.895,-.055);leg.add(sole);
+  legs.push(leg);
+ }
+ // A few loose jacket panels break the perfectly smooth capsule outline.
+ for(const side of [-1,1]){
+  const flap=addMesh(new THREE.BoxGeometry(.12,.31,.045),clothLight,side*.22,.61,.015,side*.16,0,side*-.12);
+  flap.scale.y=rand(.72,1.12);
+ }
+ // Small dirt-colored patches and torn fabric seams.
+ addMesh(new THREE.BoxGeometry(.16,.12,.025),rust,-.18,1.12,-.125,.12,0,-.18);
+ addMesh(new THREE.BoxGeometry(.025,.38,.025),rubber,.08,1.12,-.145,-.08,0,.08);
+ const scale=rand(.92,1.1);rig.scale.setScalar(scale);
+ rig.rotation.x=-.07;
+ const angle=rand(0,Math.PI*2),distance=rand(18,25);
+ root.position.set(clamp(playerRoot.position.x+Math.cos(angle)*distance,-ARENA+3,ARENA-3),0,clamp(playerRoot.position.z+Math.sin(angle)*distance,-ARENA+3,ARENA-3));
  const hp=wave>=4?2:1;
- scene.add(group);
- return {group,hp,speed:rand(1.05,1.5)+wave*.12,attack:rand(.1,.6),phase:rand(0,6.28)};
+ scene.add(root);
+ return {group:root,rig,arms,legs,hp,speed:rand(1.05,1.5)+wave*.12,attack:rand(.1,.6),phase:rand(0,6.28),walk:rand(0,6.28)};
 }
 function updateHud(){
  $('health').textContent=Math.ceil(health);$('stamina').textContent=Math.ceil(stamina);
@@ -319,7 +376,11 @@ function updateEnemies(dt){
  for(const e of enemies){
   const p=e.group.position,dx=playerRoot.position.x-p.x,dz=playerRoot.position.z-p.z,dist=Math.hypot(dx,dz);
   if(dist>1.25){const step=Math.min(dist-1.05,e.speed*dt);p.x+=dx/dist*step;p.z+=dz/dist*step;e.group.rotation.y=Math.atan2(dx,dz)}
-  e.phase+=dt*5;e.group.position.y=Math.sin(e.phase)*.025;
+  e.phase+=dt*5;e.walk+=dt*(dist>1.3?e.speed*3.2:1.1);e.group.position.y=Math.sin(e.phase)*.025;
+  const gait=Math.sin(e.walk)*.42,drag=Math.max(0,1-dist/4);
+  e.legs[0].rotation.x=gait;e.legs[1].rotation.x=-gait;
+  e.arms[0].rotation.x=-gait*.45-.18;e.arms[1].rotation.x=gait*.45-.28;
+  e.rig.rotation.z=Math.sin(e.walk*.5)*.035;e.rig.rotation.x=-.07+drag*.08;
   e.attack-=dt;if(dist<1.65&&e.attack<=0){health=Math.max(0,health-8);damageFlash=.32;e.attack=.85;toast('OPERATOR HIT')}
  }
 }
