@@ -65,7 +65,7 @@
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
     renderer.setSize(innerWidth, innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 0.82;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const sky = new Sky();
@@ -73,9 +73,9 @@
     scene.add(sky);
 
     const skyUniforms = sky.material.uniforms;
-    skyUniforms.turbidity.value = 1.15;
-    skyUniforms.rayleigh.value = 3.7;
-    skyUniforms.mieCoefficient.value = 0.0018;
+    skyUniforms.turbidity.value = 0.35;
+    skyUniforms.rayleigh.value = 1.65;
+    skyUniforms.mieCoefficient.value = 0.0008;
     skyUniforms.mieDirectionalG.value = 0.72;
 
     const sun = new THREE.Vector3();
