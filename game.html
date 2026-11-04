@@ -109,7 +109,7 @@ let health=100,stamina=100,ammo=12,reserve=72,elapsed=0,wave=1,kills=0,spawned=0
 let active=false,paused=false,ended=false,reloadTimer=0,spawnTimer=0,fireCooldown=0,damageFlash=0,playerHitCooldown=0,toastTimer=0,shotFlash=0,hadPointerLock=false;
 let yaw=0,pitch=0,firstPerson=true,mouseDragLook=false,lastPointerX=0,lastPointerY=0,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
 const collisionRects=[],coverMeshes=[];let jumpVelocity=0,grounded=true;
-const MAG=12,MAX_WAVE=5,WAVE_BASE=5,ARENA=31;
+const MAG=12,MAX_WAVE=5,WAVE_BASE=5,MAX_ACTIVE_ENEMIES=8,ARENA=31;
 const raycaster=new THREE.Raycaster(),center=new THREE.Vector2(0,0);
 const clock3D=new THREE.Clock();
 const mats={};
@@ -324,7 +324,7 @@ function makeEnemy(){
   const angle=rand(0,Math.PI*2),distance=rand(18,25);
   const tx=clamp(playerRoot.position.x+Math.cos(angle)*distance,-ARENA+3,ARENA-3);
   const tz=clamp(playerRoot.position.z+Math.sin(angle)*distance,-ARENA+3,ARENA-3);
-  if(!blockedAt(tx,tz,.42)){spawnX=tx;spawnZ=tz;spawnFound=true;break}
+  if(!blockedAt(tx,tz,.42)&&!enemies.some(other=>Math.hypot(other.group.position.x-tx,other.group.position.z-tz)<1.35)){spawnX=tx;spawnZ=tz;spawnFound=true;break}
  }
  if(!spawnFound){spawnX=clamp(playerRoot.position.x+rand(-22,22),-ARENA+3,ARENA-3);spawnZ=clamp(playerRoot.position.z+rand(-22,22),-ARENA+3,ARENA-3)}
  root.position.set(spawnX,0,spawnZ);
@@ -340,7 +340,7 @@ function updateHud(){
  $('clock').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
 }
 function toast(text){$('toast').textContent=text;$('toast').style.opacity='1';toastTimer=.9}
-function startWave(){spawned=0;spawnTimer=.5;$('objectiveTitle').textContent='WAVE '+String(wave).padStart(2,'0')+' // HOLD POSITION';$('objectiveText').textContent='Hostile contacts detected. Neutralize all targets to advance.';toast('HOSTILE WAVE INBOUND')}
+function startWave(){spawned=0;spawnTimer=.5;if(wave>1){health=Math.min(100,health+10);stamina=100;ammo=Math.min(MAG,ammo+4);reserve=Math.min(120,reserve+12);toast('FIELD SUPPLIES SECURED')}else toast('HOSTILE WAVE INBOUND');$('objectiveTitle').textContent='WAVE '+String(wave).padStart(2,'0')+' // HOLD POSITION';$('objectiveText').textContent='Hostile contacts detected. Neutralize all targets to advance.'}
 function clearEnemies(){for(const e of enemies)scene.remove(e.group);enemies=[]}
 function requestMouseLock(){if(matchMedia('(pointer:fine)').matches&&canvas.requestPointerLock){try{canvas.requestPointerLock()}catch(e){}}}
 function startGame(){
@@ -484,7 +484,7 @@ function animate(now){
  if(active&&!paused){
   elapsed+=dt;fireCooldown=Math.max(0,fireCooldown-dt);updatePlayer(dt);updateEffects(dt);
   if(reloadTimer>0){reloadTimer-=dt;if(reloadTimer<=0){const n=Math.min(MAG-ammo,reserve);ammo+=n;reserve-=n;$('weaponState').textContent='SEMI-AUTO // READY';toast('MAGAZINE READY')}}
-  spawnTimer-=dt;if(spawned<WAVE_BASE+wave*2&&spawnTimer<=0){enemies.push(makeEnemy());spawned++;spawnTimer=Math.max(.45,1.15-wave*.1)}
+  spawnTimer-=dt;if(spawned<WAVE_BASE+wave*2&&enemies.length<MAX_ACTIVE_ENEMIES&&spawnTimer<=0){enemies.push(makeEnemy());spawned++;spawnTimer=Math.max(.45,1.15-wave*.1)}
   updateEnemies(dt);
   if(health<=0){updateHud();finish(false)}
   if(spawned>=WAVE_BASE+wave*2&&enemies.length===0&&active){
