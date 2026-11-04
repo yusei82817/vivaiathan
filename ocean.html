@@ -50,7 +50,7 @@
   <canvas id="ocean" aria-label="Cinematic underwater-to-surface ocean scene"></canvas>
   <div id="underwater"></div>
   <div class="loading" id="loading">INITIALIZING OCEAN</div>
-  <div id="weather-hud"><strong id="weather-name">CLEAR</strong><span>1 CLEAR · 2 DRIZZLE · 3 RAIN · 4 DOWNPOUR · 5 STORM · 6 CLOUDY</span></div>
+  <div id="weather-hud"><strong id="weather-name">CLEAR</strong><span>1 CLEAR · 2 DRIZZLE · 3 RAIN · 4 DOWNPOUR · 5 STORM · 6 CLOUDY · 7 TSUNAMI</span></div>
 
   <script type="module">
     import * as THREE from 'three';
@@ -313,6 +313,69 @@
     lightning.position.set(0, 120, -180);
     scene.add(lightning);
 
+    // A cinematic, non-interactive tsunami wall for the PV. It travels in
+    // from the distant horizon and passes the ship/camera without changing
+    // the normal ocean controls or weather presets.
+    const tsunamiGeometry = new THREE.PlaneGeometry(3400, 900, 120, 36);
+    const tsunamiMaterial = new THREE.ShaderMaterial({
+      side: THREE.DoubleSide,
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vHeight;
+        varying float vFoam;
+        void main() {
+          vUv = uv;
+          vec3 p = position;
+          float crest = sin(p.x * 0.0028 + uTime * 0.72);
+          float secondary = sin(p.x * 0.006 + uTime * 1.1);
+          float envelope = smoothstep(0.0, 0.18, uv.y) * (0.45 + 0.55 * uv.y);
+          p.z += (crest * 105.0 + secondary * 28.0) * envelope;
+          p.z += sin(uv.y * 8.0 + uTime * 1.7 + p.x * 0.001) * 15.0;
+          vHeight = uv.y;
+          vFoam = crest * 0.5 + secondary * 0.22;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec2 vUv;
+        varying float vHeight;
+        varying float vFoam;
+        void main() {
+          vec3 deep = vec3(0.012, 0.16, 0.27);
+          vec3 middle = vec3(0.025, 0.39, 0.53);
+          vec3 crest = vec3(0.34, 0.76, 0.82);
+          vec3 color = mix(deep, middle, smoothstep(0.02, 0.78, vHeight));
+          color = mix(color, crest, smoothstep(0.78, 0.98, vHeight) * 0.72);
+          float foamLine = smoothstep(0.84, 0.93, vHeight + vFoam * 0.045);
+          float foamNoise = sin(vUv.x * 145.0 + uTime * 2.2) * sin(vUv.x * 63.0 - uTime);
+          float foam = foamLine * smoothstep(-0.15, 0.55, foamNoise);
+          color = mix(color, vec3(0.83, 0.95, 0.96), foam * 0.92);
+          float edgeFade = smoothstep(0.0, 0.045, vUv.x) * (1.0 - smoothstep(0.955, 1.0, vUv.x));
+          float alpha = edgeFade * smoothstep(0.0, 0.06, vHeight) * 0.97;
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false
+    });
+    const tsunamiWave = new THREE.Mesh(tsunamiGeometry, tsunamiMaterial);
+    tsunamiWave.position.set(0, 445, -3600);
+    tsunamiWave.visible = false;
+    tsunamiWave.frustumCulled = false;
+    scene.add(tsunamiWave);
+    const tsunamiState = { active: false, elapsed: 0, passed: false };
+    function activateTsunami() {
+      tsunamiState.active = !tsunamiState.active;
+      tsunamiState.elapsed = 0;
+      tsunamiState.passed = false;
+      tsunamiWave.position.z = -3600;
+      tsunamiWave.visible = tsunamiState.active;
+      weatherName.textContent = tsunamiState.active ? 'TSUNAMI APPROACHING' : weatherPresets[weatherIndex].name;
+    }
+
     let weatherIndex = 0;
     let weatherBlend = { ...weatherPresets[0] };
     let weatherFrom = { ...weatherBlend };
@@ -349,6 +412,11 @@
       };
     }
     addEventListener('keydown', (event) => {
+      if (event.code === 'Digit7' && !event.repeat) {
+        event.preventDefault();
+        activateTsunami();
+        return;
+      }
       const weatherKeyIndex = weatherKeys.indexOf(event.code);
       if (weatherKeyIndex !== -1) {
         event.preventDefault();
@@ -408,7 +476,18 @@
       hemisphere.intensity = 0.82 * weatherBlend.light;
       sunlight.intensity = 2.8 * weatherBlend.light;
       water.material.uniforms.time.value += delta * weatherBlend.waveSpeed;
-      water.material.uniforms.distortionScale.value = weatherBlend.distortion;
+      water.material.uniforms.distortionScale.value = weatherBlend.distortion + (tsunamiState.active ? 1.8 : 0);
+      tsunamiMaterial.uniforms.uTime.value = t;
+      if (tsunamiState.active) {
+        tsunamiState.elapsed += delta;
+        tsunamiWave.position.z += delta * 88;
+        if (tsunamiWave.position.z > camera.position.z + 90) {
+          tsunamiState.passed = true;
+          tsunamiWave.visible = false;
+          tsunamiState.active = false;
+          weatherName.textContent = weatherPresets[weatherIndex].name;
+        }
+      }
       water.material.uniforms.waterColor.value.copy(weatherBlend.waterColor);
       water.material.uniforms.sunColor.value.copy(weatherBlend.sunColor);
       cloudMaterial.opacity = weatherBlend.cloud;
@@ -454,10 +533,12 @@
         lightning.intensity = 0;
       }
 
-      const seaMotion = weatherBlend.sea;
-      shipGroup.position.y = -2.5 + Math.sin(t * (0.62 + weatherBlend.wind * 0.24)) * (0.8 * seaMotion);
+      const tsunamiDistance = tsunamiState.active ? Math.abs(tsunamiWave.position.z - shipGroup.position.z) : 99999;
+      const tsunamiImpact = tsunamiState.active ? 1 - THREE.MathUtils.smoothstep(tsunamiDistance, 180, 1450) : 0;
+      const seaMotion = weatherBlend.sea * (1 + tsunamiImpact * 1.65);
+      shipGroup.position.y = -2.5 + Math.sin(t * (0.62 + weatherBlend.wind * 0.24 + tsunamiImpact * 0.55)) * (0.8 * seaMotion);
       shipGroup.rotation.z = Math.sin(t * 0.28) * 0.0025 * seaMotion;
-      shipGroup.rotation.x = Math.sin(t * 0.43) * 0.0015 * weatherBlend.wind;
+      shipGroup.rotation.x = Math.sin(t * 0.43) * 0.0015 * (weatherBlend.wind + tsunamiImpact * 0.8);
       shipGroup.position.x = -250 + Math.sin(t * 0.035) * (8 + weatherBlend.wind * 5);
 
       // A slow cinematic ascent: submerged blue, a brief surface crossing,
@@ -497,6 +578,13 @@
           -Math.cos(cameraYaw) * Math.cos(cameraPitch)
         );
         camera.lookAt(camera.position.clone().add(lookDirection));
+      }
+
+      if (tsunamiState.active && ascentComplete()) {
+        const cameraDistance = Math.abs(tsunamiWave.position.z - camera.position.z);
+        const shake = (1 - THREE.MathUtils.smoothstep(cameraDistance, 120, 1600)) * 0.16;
+        camera.position.x += Math.sin(t * 31) * shake;
+        camera.position.y += Math.cos(t * 27) * shake * 0.55;
       }
 
       underwaterOverlay.style.opacity = String(1 - smoothstep01((camera.position.y + 5.5) / 8.5));
