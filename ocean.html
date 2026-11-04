@@ -24,6 +24,15 @@
       letter-spacing: .24em; pointer-events: none; transition: opacity .7s ease;
     }
     .loading.done { opacity: 0; }
+    #weather-hud {
+      position: fixed; left: 22px; bottom: 20px; z-index: 5;
+      color: rgba(238, 249, 255, .86);
+      font: 600 11px/1.6 Arial, sans-serif; letter-spacing: .16em;
+      text-shadow: 0 1px 8px rgba(0, 25, 55, .7);
+      pointer-events: none; user-select: none;
+    }
+    #weather-hud strong { display: block; font-size: 13px; letter-spacing: .2em; }
+    #weather-hud span { opacity: .72; font-size: 9px; letter-spacing: .12em; }
     @media (prefers-reduced-motion: reduce) {
       .loading { transition: none; }
     }
@@ -41,6 +50,7 @@
   <canvas id="ocean" aria-label="Cinematic underwater-to-surface ocean scene"></canvas>
   <div id="underwater"></div>
   <div class="loading" id="loading">INITIALIZING OCEAN</div>
+  <div id="weather-hud"><strong id="weather-name">CLEAR</strong><span>1 CLEAR · 2 DRIZZLE · 3 RAIN · 4 DOWNPOUR · 5 STORM · 6 CLOUDY</span></div>
 
   <script type="module">
     import * as THREE from 'three';
@@ -87,7 +97,8 @@
         uZenith: { value: new THREE.Color('#0759cf') },
         uUpper: { value: new THREE.Color('#087bea') },
         uHorizon: { value: new THREE.Color('#54c5f5') },
-        uSunColor: { value: new THREE.Color('#fff2d2') }
+        uSunColor: { value: new THREE.Color('#fff2d2') },
+        uLightning: { value: 0 }
       },
       vertexShader: `
         varying vec3 vSkyDirection;
@@ -102,6 +113,7 @@
         uniform vec3 uUpper;
         uniform vec3 uHorizon;
         uniform vec3 uSunColor;
+        uniform float uLightning;
         varying vec3 vSkyDirection;
 
         void main() {
@@ -114,6 +126,7 @@
           float sunDisk = smoothstep(0.99935, 0.99982, sunDot);
           float sunHalo = pow(sunDot, 36.0) * 0.22;
           skyColor = mix(skyColor, uSunColor, clamp(sunDisk + sunHalo, 0.0, 1.0));
+          skyColor += vec3(0.72, 0.82, 1.0) * uLightning;
 
           gl_FragColor = vec4(skyColor, 1.0);
           #include <colorspace_fragment>
@@ -159,11 +172,13 @@
       [2850, 430, -4100, 1450, 700],
       [-900, 620, -6200, 1100, 520]
     ];
+    const cloudSprites = [];
     for (const [x, y, z, width, height] of cloudSpecs) {
       const cloud = new THREE.Sprite(cloudMaterial);
       cloud.position.set(x, y, z);
       cloud.scale.set(width, height, 1);
       scene.add(cloud);
+      cloudSprites.push(cloud);
     }
 
     // A soft atmospheric halo reinforces the sun disk rendered by Sky.
@@ -227,7 +242,8 @@
       'https://vivaiathan.netlify.app/.netlify/functions/ship',
       (gltf) => {
         const shipModel = gltf.scene;
-        shipModel.scale.setScalar(0.78);
+        // Slightly larger hero ship, while keeping surrounding ocean visible.
+        shipModel.scale.setScalar(1.05);
 
         let bounds = new THREE.Box3().setFromObject(shipModel);
         let dimensions = bounds.getSize(new THREE.Vector3());
@@ -257,6 +273,82 @@
 
     const clock = new THREE.Clock();
     const underwaterOverlay = document.getElementById('underwater');
+
+    // Weather presets are smoothly blended so the PV never hard-cuts.
+    const weatherPresets = [
+      { name: 'CLEAR', sky: ['#0759cf', '#087bea', '#54c5f5'], sun: '#fff2d2', water: 0x086782, distortion: 3.8, waveSpeed: 1.0, cloud: 0.88, rain: 0, wind: 0, sea: 1, light: 1 },
+      { name: 'DRIZZLE', sky: ['#315f9b', '#5d91b8', '#9ab8c5'], sun: '#d5dfdf', water: 0x315f78, distortion: 4.3, waveSpeed: 1.12, cloud: 0.78, rain: 0.13, wind: 0.18, sea: 1.08, light: 0.78 },
+      { name: 'RAIN', sky: ['#344b70', '#536e8c', '#8299a8'], sun: '#aebdca', water: 0x294e64, distortion: 5.0, waveSpeed: 1.3, cloud: 0.94, rain: 0.38, wind: 0.38, sea: 1.22, light: 0.58 },
+      { name: 'DOWNPOUR', sky: ['#202f49', '#394f68', '#637b8b'], sun: '#8498a9', water: 0x1d4058, distortion: 6.4, waveSpeed: 1.65, cloud: 1.0, rain: 0.72, wind: 0.68, sea: 1.65, light: 0.38 },
+      { name: 'STORM + LIGHTNING', sky: ['#101a2b', '#26364a', '#46596a'], sun: '#64778a', water: 0x142f43, distortion: 8.2, waveSpeed: 2.15, cloud: 1.0, rain: 1, wind: 1, sea: 2.25, light: 0.24 },
+      { name: 'CLOUDY', sky: ['#53677c', '#8194a3', '#b2c1c9'], sun: '#c7d0d4', water: 0x3b6677, distortion: 4.0, waveSpeed: 0.92, cloud: 1.0, rain: 0, wind: 0.12, sea: 0.95, light: 0.68 }
+    ];
+    const weatherName = document.getElementById('weather-name');
+    const rainGeometry = new THREE.BufferGeometry();
+    const rainCount = 5200;
+    const rainPositions = new Float32Array(rainCount * 3);
+    const rainVelocities = new Float32Array(rainCount * 3);
+    for (let i = 0; i < rainCount; i++) {
+      rainPositions[i * 3] = (Math.random() - 0.5) * 260;
+      rainPositions[i * 3 + 1] = Math.random() * 150;
+      rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 260;
+      rainVelocities[i * 3] = Math.random() - 0.5;
+      rainVelocities[i * 3 + 1] = 0.7 + Math.random() * 0.8;
+      rainVelocities[i * 3 + 2] = Math.random() - 0.5;
+    }
+    rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+    const rainMaterial = new THREE.PointsMaterial({
+      color: 0xd9efff, size: 1.35, transparent: true, opacity: 0,
+      depthWrite: false, sizeAttenuation: true
+    });
+    const rainField = new THREE.Points(rainGeometry, rainMaterial);
+    rainField.frustumCulled = false;
+    scene.add(rainField);
+    const lightning = new THREE.PointLight(0xd9eaff, 0, 0, 2);
+    lightning.position.set(0, 120, -180);
+    scene.add(lightning);
+
+    let weatherIndex = 0;
+    let weatherBlend = { ...weatherPresets[0] };
+    let weatherFrom = { ...weatherBlend };
+    let weatherTo = { ...weatherBlend };
+    let weatherTransitionStart = 0;
+    let lightningTimer = 4 + Math.random() * 7;
+    let lightningFlash = 0;
+    let lightningPulse = 0;
+    const weatherKeys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
+    function selectWeather(index) {
+      if (index === weatherIndex) return;
+      weatherIndex = index;
+      weatherFrom = { ...weatherBlend };
+      weatherTo = { ...weatherPresets[index] };
+      weatherTransitionStart = clock.elapsedTime;
+      weatherName.textContent = weatherTo.name;
+    }
+    function blendWeather(a, b, amount) {
+      const mix = (x, y) => x + (y - x) * amount;
+      const colorMix = (x, y) => new THREE.Color(x).lerp(new THREE.Color(y), amount);
+      return {
+        ...b,
+        skyColors: a.sky.map((color, i) => colorMix(color, b.sky[i])),
+        sunColor: colorMix(a.sun, b.sun),
+        waterColor: colorMix(new THREE.Color(a.water), new THREE.Color(b.water)),
+        distortion: mix(a.distortion, b.distortion),
+        waveSpeed: mix(a.waveSpeed, b.waveSpeed),
+        cloud: mix(a.cloud, b.cloud),
+        rain: mix(a.rain, b.rain),
+        wind: mix(a.wind, b.wind),
+        sea: mix(a.sea, b.sea),
+        light: mix(a.light, b.light)
+      };
+    }
+    addEventListener('keydown', (event) => {
+      const weatherKeyIndex = weatherKeys.indexOf(event.code);
+      if (weatherKeyIndex !== -1) {
+        event.preventDefault();
+        selectWeather(weatherKeyIndex);
+      }
+    });
     const ascentDuration = 9.5;
     const startZ = 82;
     const endZ = 30;
@@ -299,10 +391,64 @@
       const t = clock.elapsedTime;
       const ascent = smoothstep01(t / ascentDuration);
 
-      water.material.uniforms.time.value += delta;
-      shipGroup.position.y = -2.5 + Math.sin(t * 0.62) * 0.8;
-      shipGroup.rotation.z = Math.sin(t * 0.28) * 0.0025;
-      shipGroup.position.x = -250 + Math.sin(t * 0.035) * 8;
+      const weatherProgress = smoothstep01((t - weatherTransitionStart) / 3.2);
+      weatherBlend = blendWeather(weatherFrom, weatherTo, weatherProgress);
+      const skyUniforms = skyMaterial.uniforms;
+      skyUniforms.uZenith.value.copy(weatherBlend.skyColors[0]);
+      skyUniforms.uUpper.value.copy(weatherBlend.skyColors[1]);
+      skyUniforms.uHorizon.value.copy(weatherBlend.skyColors[2]);
+      skyUniforms.uSunColor.value.copy(weatherBlend.sunColor);
+      water.material.uniforms.time.value += delta * weatherBlend.waveSpeed;
+      water.material.uniforms.distortionScale.value = weatherBlend.distortion;
+      water.material.uniforms.waterColor.value.copy(weatherBlend.waterColor);
+      water.material.uniforms.sunColor.value.copy(weatherBlend.sunColor);
+      cloudMaterial.opacity = weatherBlend.cloud;
+      cloudSprites.forEach((cloud, index) => {
+        cloud.position.x += delta * (3 + weatherBlend.wind * 18) * (index % 2 ? -1 : 1);
+      });
+      rainMaterial.opacity = weatherBlend.rain * 0.78;
+      rainMaterial.size = 1.15 + weatherBlend.rain * 1.25;
+      rainField.visible = weatherBlend.rain > 0.015;
+      rainField.position.set(camera.position.x, 0, camera.position.z);
+      for (let i = 0; i < rainCount; i++) {
+        const p = i * 3;
+        rainPositions[p] += (rainVelocities[p] + weatherBlend.wind * 3.8) * delta * 24;
+        rainPositions[p + 1] -= rainVelocities[p + 1] * delta * (65 + weatherBlend.rain * 100);
+        rainPositions[p + 2] += (rainVelocities[p + 2] + weatherBlend.wind * 1.8) * delta * 24;
+        if (rainPositions[p + 1] < -2) {
+          rainPositions[p] = (Math.random() - 0.5) * 260;
+          rainPositions[p + 1] = 90 + Math.random() * 65;
+          rainPositions[p + 2] = (Math.random() - 0.5) * 260;
+        }
+      }
+      rainGeometry.attributes.position.needsUpdate = true;
+
+      if (weatherIndex === 4) {
+        lightningTimer -= delta;
+        if (lightningTimer <= 0 && lightningFlash <= 0) {
+          lightningFlash = 0.12 + Math.random() * 0.12;
+          lightningPulse = 0.8 + Math.random() * 1.8;
+          lightningTimer = 3.5 + Math.random() * 8;
+        }
+      } else {
+        lightningFlash = Math.max(0, lightningFlash - delta * 5);
+      }
+      if (lightningFlash > 0) {
+        lightningFlash = Math.max(0, lightningFlash - delta * 5.5);
+        const flashPower = lightningFlash * lightningPulse;
+        skyUniforms.uLightning.value = flashPower * 0.75;
+        lightning.intensity = flashPower * 85;
+        lightning.position.set(camera.position.x + 35, 100, camera.position.z - 120);
+      } else {
+        skyUniforms.uLightning.value = 0;
+        lightning.intensity = 0;
+      }
+
+      const seaMotion = weatherBlend.sea;
+      shipGroup.position.y = -2.5 + Math.sin(t * (0.62 + weatherBlend.wind * 0.24)) * (0.8 * seaMotion);
+      shipGroup.rotation.z = Math.sin(t * 0.28) * 0.0025 * seaMotion;
+      shipGroup.rotation.x = Math.sin(t * 0.43) * 0.0015 * weatherBlend.wind;
+      shipGroup.position.x = -250 + Math.sin(t * 0.035) * (8 + weatherBlend.wind * 5);
 
       // A slow cinematic ascent: submerged blue, a brief surface crossing,
       // then a calm reveal of the bright horizon.
