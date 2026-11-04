@@ -72,7 +72,7 @@ body{font-family:var(--body,Arial,sans-serif)}.field{position:relative;width:100
 <button class="btn ghost exit" id="pauseBtn">Pause</button><button class="btn ghost exit" id="abortBtn" style="top:132px">Abort Operation</button>
 <div class="crosshair" id="crosshair"></div><div class="hit-marker" id="hitMarker">×</div><div class="damage-vignette" id="damageVignette"></div>
 <div class="toast" id="toast">HOSTILES DETECTED</div>
-<div class="notice" id="notice">WASD MOVE / MOUSE AIM / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE</div>
+<div class="notice" id="notice">WASD MOVE / MOUSE AIM / RMB ADS / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE</div>
 <div class="hud-bottom">
  <div class="vitals">
   <div class="vital"><span class="hud-label">HEALTH</span><strong id="health">100</strong><div class="bar"><i id="healthBar"></i></div></div>
@@ -107,7 +107,7 @@ let avatarWalkTime=0,playerMoving=false;
 const vrmLoader=new GLTFLoader();vrmLoader.register(parser=>new VRMLoaderPlugin(parser));
 let health=100,stamina=100,ammo=12,reserve=72,elapsed=0,wave=1,kills=0,spawned=0;
 let active=false,paused=false,ended=false,reloadTimer=0,spawnTimer=0,fireCooldown=0,damageFlash=0,playerHitCooldown=0,toastTimer=0,shotFlash=0,hadPointerLock=false;
-let yaw=0,pitch=0,firstPerson=true,mouseDragLook=false,lastPointerX=0,lastPointerY=0,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
+let yaw=0,pitch=0,firstPerson=true,aiming=false,mouseDragLook=false,lastPointerX=0,lastPointerY=0,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
 const collisionRects=[],coverMeshes=[];let jumpVelocity=0,grounded=true;
 const MAG=12,MAX_WAVE=5,WAVE_BASE=5,MAX_ACTIVE_ENEMIES=8,ARENA=31;
 const raycaster=new THREE.Raycaster(),center=new THREE.Vector2(0,0);
@@ -204,6 +204,8 @@ function createDefaultAvatar(){
 }
 function updateCamera(){
  if(!camera||!playerRoot)return;
+ const targetFov=aiming?(firstPerson?48:55):68;
+ if(Math.abs(camera.fov-targetFov)>.08){camera.fov=THREE.MathUtils.lerp(camera.fov,targetFov,.2);camera.updateProjectionMatrix()}
  if(firstPerson){
   if(avatarVisual)avatarVisual.visible=false;
   camera.position.set(playerRoot.position.x+(playerMoving?Math.cos(avatarWalkTime*2)*.012:0),playerRoot.position.y+1.58+(playerMoving?Math.abs(Math.sin(avatarWalkTime*2))*.025:0),playerRoot.position.z);
@@ -462,9 +464,9 @@ function updateEffects(dt){
  const gun=playerWeapon;
  if(gun){const light=gun.userData.muzzleLight;light.intensity=Math.max(0,light.intensity-dt*100);if(light.intensity===0)gun.userData.flash.visible=false;
   const reloadPhase=reloadTimer>0?Math.sin(clamp(1-reloadTimer/1.15,0,1)*Math.PI):0;
-  gun.position.x=gun.userData.baseX+(playerMoving?Math.sin(avatarWalkTime)*.012:0);
-  gun.position.y=gun.userData.baseY+(playerMoving?Math.abs(Math.sin(avatarWalkTime*2))*.012:0)+(shotFlash>0?-.035:0);
-  gun.position.z=gun.userData.baseZ+(shotFlash>0 ? .055 : 0);gun.rotation.x=-reloadPhase*.42;gun.rotation.z=-reloadPhase*.16;
+  gun.position.x=gun.userData.baseX+(firstPerson&&aiming?-.22:0)+(playerMoving?Math.sin(avatarWalkTime)*.012:0);
+  gun.position.y=gun.userData.baseY+(firstPerson&&aiming?.075:0)+(playerMoving?Math.abs(Math.sin(avatarWalkTime*2))*.012:0)+(shotFlash>0?-.035:0);
+  gun.position.z=gun.userData.baseZ+(firstPerson&&aiming?-.12:0)+(shotFlash>0 ? .055 : 0);gun.rotation.x=-reloadPhase*.42;gun.rotation.z=-reloadPhase*.16;
  }
  avatarWalkTime+=dt*(playerMoving?9:2);const swing=playerMoving?Math.sin(avatarWalkTime)*.48:Math.sin(avatarWalkTime)*.025;
  if(avatarVRM){
@@ -495,10 +497,13 @@ function animate(now){
  renderer.render(scene,camera);
 }
 function pointerLook(e){if(document.pointerLockElement===canvas){yaw-=e.movementX*.0022;pitch=clamp(pitch-e.movementY*.0022,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}}
-document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===canvas;$('notice').textContent=locked?'WASD MOVE / MOUSE AIM / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE':'CLICK FIELD TO CAPTURE CAMERA // ESC TO PAUSE';if(active&&hadPointerLock&&!locked)pauseGame();hadPointerLock=locked});
+document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===canvas;$('notice').textContent=locked?'WASD MOVE / MOUSE AIM / RMB ADS / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE':'CLICK FIELD TO CAPTURE CAMERA // ESC TO PAUSE';if(active&&hadPointerLock&&!locked)pauseGame();hadPointerLock=locked});
 document.addEventListener('mousemove',pointerLook);
 canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});
-canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&active){if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY;fire();requestMouseLock()}else fire()}});
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&active){if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY;fire();requestMouseLock()}else fire()}});
+window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2&&active&&!paused)aiming=true});
+window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===2)aiming=false});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&mouseDragLook&&!document.pointerLockElement&&active&&!paused){const dx=e.clientX-lastPointerX,dy=e.clientY-lastPointerY;lastPointerX=e.clientX;lastPointerY=e.clientY;yaw-=dx*.004;pitch=clamp(pitch-dy*.004,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}});
 window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')mouseDragLook=false});
 window.addEventListener('pointercancel',()=>{mouseDragLook=false});
