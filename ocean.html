@@ -269,6 +269,99 @@
       }
     );
 
+
+    // Procedural ship traffic remains available even if the optional GLB fails.
+    const traffic=[];
+    const mats={
+      hull:new THREE.MeshStandardMaterial({color:0x203d4c,roughness:0.66,metalness:0.18}),
+      white:new THREE.MeshStandardMaterial({color:0xdce6e6,roughness:0.72}),
+      deck:new THREE.MeshStandardMaterial({color:0x899692,roughness:0.86}),
+      glass:new THREE.MeshStandardMaterial({color:0x173e53,roughness:0.25}),
+      red:new THREE.MeshStandardMaterial({color:0xa64b3d}),
+      blue:new THREE.MeshStandardMaterial({color:0x315e78}),
+      orange:new THREE.MeshStandardMaterial({color:0xc87535}),
+      yellow:new THREE.MeshStandardMaterial({color:0xb4a04f})
+    };
+    const boxGeo=new THREE.BoxGeometry(1,1,1), cylGeo=new THREE.CylinderGeometry(1,1,1,16), coneGeo=new THREE.ConeGeometry(1,1,8);
+    const wakeGeo=new THREE.PlaneGeometry(1,1);
+    const wakeMat=new THREE.MeshBasicMaterial({color:0xa9d9e8,transparent:true,opacity:0.2,depthWrite:false,side:THREE.DoubleSide});
+    function part(g,m,p,s,r){
+      const o=new THREE.Mesh(g,m); o.position.set(...p); o.scale.set(...s); if(r)o.rotation.set(...r); return o;
+    }
+    function makeTrafficShip(a,i){
+      const g=new THREE.Group(),L=a.L,W=a.W;
+      g.add(part(boxGeo,a.hull,[0,1.1,0],[W,2.2,L*.78]));
+      g.add(part(coneGeo,a.hull,[0,1.1,L*.34],[W*.51,L*.3,1],[Math.PI/2,0,0]));
+      g.add(part(boxGeo,mats.deck,[0,2.2,-L*.08],[W*.82,.25,L*.56]));
+      if(a.type==="cargo"){
+        const cs=[mats.red,mats.blue,mats.white,mats.orange,mats.yellow],n=Math.max(2,Math.floor(L/34));
+        for(let k=0;k<n;k++){const z=-L*.27+k*(L*.52/n);
+          for(let side=-1;side<=1;side++)g.add(part(boxGeo,cs[(k+side+5)%cs.length],[side*W*.27,3.3,z],[W*.25,1.9,L*.52/n*.9]));
+          if(k%2===0)g.add(part(boxGeo,cs[(k+2)%cs.length],[0,5.2,z],[W*.25,1.6,L*.52/n*.9]));
+        }
+        g.add(part(boxGeo,mats.white,[0,3.1,-L*.39],[W*.58,2,L*.13]));
+      }else if(a.type==="tanker"){
+        for(let k=0;k<4;k++){const z=-L*.24+k*L*.16;
+          g.add(part(cylGeo,mats.white,[0,3,z],[W*.33,L*.12,W*.33],[Math.PI/2,0,0]));
+          g.add(part(boxGeo,mats.deck,[0,2.4,z],[W*.72,.2,L*.025]));
+        }
+        g.add(part(boxGeo,mats.white,[0,3.15,-L*.39],[W*.62,2.4,L*.13]));
+      }else if(a.type==="ferry"){
+        g.add(part(boxGeo,mats.white,[0,3.4,-L*.12],[W*.78,2,L*.48]));
+        g.add(part(boxGeo,mats.glass,[0,4.65,-L*.13],[W*.72,.6,L*.42]));
+        for(let d=0;d<2;d++)g.add(part(boxGeo,mats.white,[0,4.9+d*.68,-L*.22],[W*(.68-d*.12),.5,L*.25]));
+      }else{
+        g.add(part(boxGeo,mats.white,[0,3.2,-L*.18],[W*.62,1.8,L*.3]));
+        g.add(part(boxGeo,mats.glass,[0,4.25,-L*.18],[W*.58,.7,L*.2]));
+        g.add(part(boxGeo,mats.orange,[0,4.9,-L*.2],[W*.12,.75,.8]));
+      }
+      g.add(part(cylGeo,mats.white,[0,5,-L*.34],[.2,2,.2]));
+      const red=new THREE.Mesh(new THREE.SphereGeometry(.42,8,6),new THREE.MeshBasicMaterial({color:0xff5547}));
+      red.position.set(-W*.51,2.5,L*.16);g.add(red);
+      const green=new THREE.Mesh(new THREE.SphereGeometry(.42,8,6),new THREE.MeshBasicMaterial({color:0x42ff9b}));
+      green.position.set(W*.51,2.5,L*.16);g.add(green);
+      for(const side of [-1,1]){const wake=new THREE.Mesh(wakeGeo,wakeMat);wake.rotation.x=-Math.PI/2;
+        wake.position.set(side*W*.22,.16,-L*.48);wake.scale.set(W*.28,L*.95,1);g.add(wake);}
+      g.position.set(a.x,0,a.z);scene.add(g);
+      traffic.push({root:g,L,W,radius:Math.max(L*.47,W*1.7),speed:a.speed,vel:new THREE.Vector3(0,0,a.speed),
+        route:a.route.map(p=>new THREE.Vector3(p[0],0,p[1])),wp:1,heading:0,phase:i*1.7,bob:.35+i*.025});
+    }
+    [
+      {type:"cargo",x:-520,z:-520,L:150,W:27,speed:13,hull:mats.hull,route:[[-520,-520],[480,-1050],[900,-1900],[-520,-520]]},
+      {type:"tanker",x:360,z:-760,L:132,W:25,speed:10,hull:mats.hull,route:[[360,-760],[-720,-1250],[-1050,-2050],[360,-760]]},
+      {type:"ferry",x:-80,z:-390,L:76,W:18,speed:16,hull:mats.blue,route:[[-80,-390],[620,-650],[900,-1150],[-80,-390]]},
+      {type:"patrol",x:720,z:-420,L:48,W:12,speed:20,hull:mats.hull,route:[[720,-420],[250,-980],[-500,-1450],[720,-420]]},
+      {type:"cargo",x:-980,z:-1180,L:118,W:22,speed:11,hull:mats.hull,route:[[-980,-1180],[-180,-1650],[520,-2200],[-980,-1180]]},
+      {type:"tanker",x:1050,z:-1450,L:142,W:26,speed:9,hull:mats.hull,route:[[1050,-1450],[250,-1050],[-650,-700],[1050,-1450]]},
+      {type:"ferry",x:1250,z:-650,L:68,W:17,speed:15,hull:mats.white,route:[[1250,-650],[600,-1200],[-250,-1750],[1250,-650]]}
+    ].forEach(makeTrafficShip);
+
+    // Predict closest point of approach and steer clear before vessels converge.
+    function updateTraffic(delta,t,wind,sea){
+      const desired=traffic.map((a,i)=>{
+        if(a.route[a.wp].distanceTo(a.root.position)<95)a.wp=(a.wp+1)%a.route.length;
+        const v=a.route[a.wp].clone().sub(a.root.position).normalize().multiplyScalar(a.speed),avoid=new THREE.Vector3();
+        for(let j=0;j<traffic.length;j++){if(i===j)continue;const b=traffic[j];
+          const rp=a.root.position.clone().sub(b.root.position),rv=a.vel.clone().sub(b.vel),vv=rv.lengthSq();
+          const tc=vv>.01?THREE.MathUtils.clamp(-rp.dot(rv)/vv,0,15):0;
+          const closest=rp.clone().addScaledVector(rv,tc),safe=a.radius+b.radius+95,d=closest.length();
+          if(d<safe){const away=d>.01?closest.normalize():new THREE.Vector3(i%2?1:-1,0,0);avoid.addScaledVector(away,(1-d/safe)*(.8+tc/12));}
+        }
+        const p=a.root.position;if(p.x < -1750)avoid.x+=1.2;if(p.x>1750)avoid.x-=1.2;
+        if(p.z < -2650)avoid.z+=1.2;if(p.z>-180)avoid.z-=1.2;
+        v.addScaledVector(avoid,a.speed*1.35);return v.lengthSq()>.01?v.normalize().multiplyScalar(a.speed):a.vel.clone();
+      });
+      traffic.forEach((a,i)=>{
+        a.vel.lerp(desired[i],Math.min(1,delta*.42));
+        const heading=Math.atan2(a.vel.x,a.vel.z),diff=THREE.MathUtils.euclideanModulo(heading-a.heading+Math.PI,Math.PI*2)-Math.PI;
+        a.heading+=diff*Math.min(1,delta*.72);a.root.rotation.y=a.heading;
+        a.root.rotation.z=Math.sin(t*.7+a.phase)*.012*(.5+wind);
+        a.root.rotation.x=Math.sin(t*.53+a.phase)*.009*(.45+sea*.22);
+        a.root.position.addScaledVector(a.vel,delta);
+        a.root.position.y=Math.sin(t*.8+a.phase)*a.bob*(.7+sea*.18);
+      });
+    }
+
     const hemisphere = new THREE.HemisphereLight(0xdff5ff, 0x24566a, 0.82);
     scene.add(hemisphere);
 
@@ -540,6 +633,7 @@
       shipGroup.rotation.z = Math.sin(t * 0.28) * 0.0025 * seaMotion;
       shipGroup.rotation.x = Math.sin(t * 0.43) * 0.0015 * (weatherBlend.wind + tsunamiImpact * 0.8);
       shipGroup.position.x = -250 + Math.sin(t * 0.035) * (8 + weatherBlend.wind * 5);
+      updateTraffic(delta, t, weatherBlend.wind, weatherBlend.sea);
 
       // A slow cinematic ascent: submerged blue, a brief surface crossing,
       // then a calm reveal of the bright horizon.
