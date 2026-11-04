@@ -261,6 +261,33 @@
     const startZ = 82;
     const endZ = 30;
 
+    // Manual camera controls unlock after the cinematic ascent.
+    const pressedKeys = new Set();
+    let cameraYaw = 0;
+    let cameraPitch = 0;
+    const moveSpeed = 48;
+    const turnSpeed = 1.35;
+    const controlKeys = new Set([
+      'KeyW', 'KeyA', 'KeyS', 'KeyD',
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'
+    ]);
+
+    addEventListener('keydown', (event) => {
+      if (!controlKeys.has(event.code)) return;
+      event.preventDefault();
+      if (ascentComplete()) pressedKeys.add(event.code);
+    });
+
+    addEventListener('keyup', (event) => {
+      pressedKeys.delete(event.code);
+    });
+
+    addEventListener('blur', () => pressedKeys.clear());
+
+    function ascentComplete() {
+      return clock.elapsedTime >= ascentDuration;
+    }
+
     function smoothstep01(value) {
       const x = THREE.MathUtils.clamp(value, 0, 1);
       return x * x * (3 - 2 * x);
@@ -279,12 +306,41 @@
 
       // A slow cinematic ascent: submerged blue, a brief surface crossing,
       // then a calm reveal of the bright horizon.
-      camera.position.x = Math.sin(t * 0.11) * 0.65;
-      camera.position.z = THREE.MathUtils.lerp(startZ, endZ, ascent);
-      camera.position.y = THREE.MathUtils.lerp(-8, 7.5, ascent)
-        + (ascent > 0.98 ? Math.sin(t * 0.7) * 0.18 : 0);
+      if (t < ascentDuration) {
+        camera.position.x = Math.sin(t * 0.11) * 0.65;
+        camera.position.z = THREE.MathUtils.lerp(startZ, endZ, ascent);
+        camera.position.y = THREE.MathUtils.lerp(-8, 7.5, ascent)
+          + (ascent > 0.98 ? Math.sin(t * 0.7) * 0.18 : 0);
+        camera.lookAt(camera.position.x * 0.12, 2.5, -100);
+      } else {
+        const turnAmount = turnSpeed * delta;
+        if (pressedKeys.has('ArrowLeft')) cameraYaw += turnAmount;
+        if (pressedKeys.has('ArrowRight')) cameraYaw -= turnAmount;
+        if (pressedKeys.has('ArrowUp')) cameraPitch = Math.min(1.2, cameraPitch + turnAmount);
+        if (pressedKeys.has('ArrowDown')) cameraPitch = Math.max(-1.2, cameraPitch - turnAmount);
 
-      camera.lookAt(camera.position.x * 0.12, 2.5, -100);
+        const forward = new THREE.Vector3(Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
+        const right = new THREE.Vector3(Math.cos(cameraYaw), 0, Math.sin(cameraYaw));
+        const movement = new THREE.Vector3();
+
+        if (pressedKeys.has('KeyW')) movement.add(forward);
+        if (pressedKeys.has('KeyS')) movement.sub(forward);
+        if (pressedKeys.has('KeyD')) movement.add(right);
+        if (pressedKeys.has('KeyA')) movement.sub(right);
+
+        if (movement.lengthSq() > 0) {
+          movement.normalize().multiplyScalar(moveSpeed * delta);
+          camera.position.add(movement);
+        }
+
+        const lookDirection = new THREE.Vector3(
+          Math.sin(cameraYaw) * Math.cos(cameraPitch),
+          Math.sin(cameraPitch),
+          -Math.cos(cameraYaw) * Math.cos(cameraPitch)
+        );
+        camera.lookAt(camera.position.clone().add(lookDirection));
+      }
+
       underwaterOverlay.style.opacity = String(1 - smoothstep01((camera.position.y + 5.5) / 8.5));
 
       renderer.render(scene, camera);
