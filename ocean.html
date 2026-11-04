@@ -10,6 +10,13 @@
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #83cce5; }
     body { position: relative; }
     #ocean { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    #underwater {
+      position: fixed; inset: 0; pointer-events: none; opacity: .88;
+      background:
+        radial-gradient(ellipse at 50% 8%, rgba(153, 231, 255, .22), transparent 48%),
+        linear-gradient(180deg, rgba(0, 45, 78, .24), rgba(0, 22, 48, .72));
+      mix-blend-mode: multiply; transition: opacity .15s linear;
+    }
     .loading {
       position: fixed; inset: 0; display: grid; place-items: center;
       color: rgba(12, 48, 65, .72); font: 600 10px Arial, sans-serif;
@@ -30,7 +37,8 @@
   </script>
 </head>
 <body>
-  <canvas id="ocean" aria-label="Animated open ocean"></canvas>
+  <canvas id="ocean" aria-label="Cinematic underwater-to-surface ocean scene"></canvas>
+  <div id="underwater"></div>
   <div class="loading" id="loading">INITIALIZING OCEAN</div>
 
   <script type="module">
@@ -43,8 +51,9 @@
     const scene = new THREE.Scene();
 
     const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 20000);
-    camera.position.set(0, 17, 82);
-    camera.lookAt(0, 3, -100);
+    // Begin below the surface, then rise through it into the open air.
+    camera.position.set(0, -8, 82);
+    camera.lookAt(0, 2, -100);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -97,6 +106,8 @@
       alpha: 1
     });
     water.rotation.x = -Math.PI / 2;
+    // Make the animated water visible from beneath the surface as the camera rises.
+    water.material.side = THREE.DoubleSide;
     scene.add(water);
 
     scene.add(new THREE.HemisphereLight(0xd9f5ff, 0x18394a, 0.65));
@@ -106,17 +117,33 @@
     scene.add(sunlight);
 
     const clock = new THREE.Clock();
-    const baseX = camera.position.x;
+    const underwaterOverlay = document.getElementById('underwater');
+    const ascentDuration = 9.5;
+    const startZ = 82;
+    const endZ = 30;
+
+    function smoothstep01(value) {
+      const x = THREE.MathUtils.clamp(value, 0, 1);
+      return x * x * (3 - 2 * x);
+    }
 
     function animate() {
       requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.04);
       const t = clock.elapsedTime;
+      const ascent = smoothstep01(t / ascentDuration);
 
       water.material.uniforms.time.value += delta;
-      camera.position.x = baseX + Math.sin(t * 0.11) * 1.2;
-      camera.position.y = 17 + Math.sin(t * 0.18) * 0.45;
-      camera.lookAt(camera.position.x * 0.15, 3, -100);
+
+      // A slow cinematic ascent: submerged blue, a brief surface crossing,
+      // then a calm reveal of the bright horizon.
+      camera.position.x = Math.sin(t * 0.11) * 0.65;
+      camera.position.z = THREE.MathUtils.lerp(startZ, endZ, ascent);
+      camera.position.y = THREE.MathUtils.lerp(-8, 7.5, ascent)
+        + (ascent > 0.98 ? Math.sin(t * 0.7) * 0.18 : 0);
+
+      camera.lookAt(camera.position.x * 0.12, 2.5, -100);
+      underwaterOverlay.style.opacity = String(0.88 * (1 - smoothstep01((camera.position.y + 3.5) / 9)));
 
       renderer.render(scene, camera);
     }
