@@ -134,7 +134,8 @@ function init3D(){
  const grid=new THREE.GridHelper(70,70,0x476164,0x34494b);grid.position.y=-.02;grid.material.transparent=true;grid.material.opacity=.22;scene.add(grid);
  // Perimeter barriers and industrial structures.
  const wallMat=material(0x29383b),trimMat=material(0x53666a,.65,.25),containerA=material(0x34474a),containerB=material(0x3a4140),warning=material(0x9a7544);
- box(scene,0,2,-34,70,4,1,wallMat);box(scene,0,2,34,70,4,1,wallMat);box(scene,-34,2,0,1,4,70,wallMat);box(scene,34,2,0,1,4,70,wallMat);
+ const perimeterWalls=[box(scene,0,2,-34,70,4,1,wallMat),box(scene,0,2,34,70,4,1,wallMat),box(scene,-34,2,0,1,4,70,wallMat),box(scene,34,2,0,1,4,70,wallMat)];
+ coverMeshes.push(...perimeterWalls);
  for(let i=-3;i<=3;i++){
   box(scene,i*9,2,-33.35,8.4,3.6,.12,trimMat);
   box(scene,i*9,2,33.35,8.4,3.6,.12,trimMat);
@@ -330,7 +331,7 @@ function makeEnemy(){
  }
  if(!spawnFound){spawnX=clamp(playerRoot.position.x+rand(-22,22),-ARENA+3,ARENA-3);spawnZ=clamp(playerRoot.position.z+rand(-22,22),-ARENA+3,ARENA-3)}
  root.position.set(spawnX,0,spawnZ);
- const hp=wave>=4?2:1;
+ const hp=wave>=4?2.4:1.35;
  scene.add(root);
  return {group:root,rig,arms,legs,hp,speed:rand(1.05,1.5)+wave*.12,attack:rand(.1,.6),phase:rand(0,6.28),walk:rand(0,6.28)};
 }
@@ -364,7 +365,7 @@ function reload(){
 function fire(){
  if(!active||paused||reloadTimer>0||fireCooldown>0)return;
  if(ammo<=0){toast('MAGAZINE EMPTY // PRESS R');return}
- ammo--;fireCooldown=.24;shotFlash=.09;
+ ammo--;fireCooldown=.18;shotFlash=.09;
  const gun=playerWeapon;
  if(gun){gun.userData.muzzleLight.intensity=8;gun.userData.flash.visible=true;gun.userData.flash.scale.setScalar(rand(.8,1.3))}
  raycaster.setFromCamera(center,camera);raycaster.near=0;raycaster.far=100;
@@ -375,7 +376,7 @@ function fire(){
  if(hits.length&&(!coverHits.length||hits[0].distance<coverHits[0].distance)){
   const target=enemies.find(e=>{let found=false;e.group.traverse(o=>{if(o===hits[0].object)found=true});return found});
   if(target){
-   const headshot=hits[0].point.y-target.group.position.y>1.53;target.hp-=headshot?2:1;const puff=new THREE.Mesh(new THREE.SphereGeometry(.12,6,6),new THREE.MeshBasicMaterial({color:0xc18a6a}));puff.position.copy(hits[0].point);scene.add(puff);setTimeout(()=>{scene.remove(puff);puff.geometry.dispose();puff.material.dispose()},180);
+   const headshot=hits[0].point.y-target.group.position.y>1.53;target.hp-=headshot?2.5:1.35;const puff=new THREE.Mesh(new THREE.SphereGeometry(.12,6,6),new THREE.MeshBasicMaterial({color:0xc18a6a}));puff.position.copy(hits[0].point);scene.add(puff);setTimeout(()=>{scene.remove(puff);puff.geometry.dispose();puff.material.dispose()},180);
    $('crosshair').classList.add('hit');$('hitMarker').style.opacity='1';setTimeout(()=>{$('crosshair').classList.remove('hit');$('hitMarker').style.opacity='0'},120);
    if(target.hp<=0){scene.remove(target.group);enemies.splice(enemies.indexOf(target),1);kills++;toast(headshot?'HEADSHOT // HOSTILE NEUTRALIZED':'HOSTILE NEUTRALIZED')}else if(headshot){toast('HEADSHOT')}
   }
