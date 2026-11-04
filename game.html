@@ -135,14 +135,13 @@ function init3D(){
  // Perimeter barriers and industrial structures.
  const wallMat=material(0x29383b),trimMat=material(0x53666a,.65,.25),containerA=material(0x34474a),containerB=material(0x3a4140),warning=material(0x9a7544);
  const perimeterWalls=[box(scene,0,2,-34,70,4,1,wallMat),box(scene,0,2,34,70,4,1,wallMat),box(scene,-34,2,0,1,4,70,wallMat),box(scene,34,2,0,1,4,70,wallMat)];
- coverMeshes.push(...perimeterWalls);
  for(let i=-3;i<=3;i++){
   box(scene,i*9,2,-33.35,8.4,3.6,.12,trimMat);
   box(scene,i*9,2,33.35,8.4,3.6,.12,trimMat);
  }
  // Cargo containers leave a clear central combat lane.
  const containers=[[-13,0,-13,8,5,5,containerA],[13,0,-14,8,5,5,containerB],[-15,0,14,7,4.5,5,containerB],[15,0,15,7,4.5,5,containerA],[-25,0,0,4,4,12,containerA],[25,0,-1,4,4,12,containerB]];
- collisionRects.length=0;coverMeshes.length=0;
+ collisionRects.length=0;coverMeshes.length=0;coverMeshes.push(...perimeterWalls);
  for(const [x,y,z,sx,sy,sz,mat] of containers){
   collisionRects.push({minX:x-sx/2,maxX:x+sx/2,minZ:z-sz/2,maxZ:z+sz/2});
   const c=box(scene,x,sy/2,z,sx,sy,sz,mat);coverMeshes.push(c);
