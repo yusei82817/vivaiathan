@@ -501,8 +501,8 @@ document.addEventListener('pointerlockchange',()=>{const locked=document.pointer
 document.addEventListener('mousemove',pointerLook);
 canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&active){if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY;fire();requestMouseLock()}else fire()}});
-window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2&&active&&!paused)aiming=true});
-window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===2)aiming=false});
+window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2&&active&&!paused){aiming=true;if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY}}});
+window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===2){aiming=false;mouseDragLook=false}});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&mouseDragLook&&!document.pointerLockElement&&active&&!paused){const dx=e.clientX-lastPointerX,dy=e.clientY-lastPointerY;lastPointerX=e.clientX;lastPointerY=e.clientY;yaw-=dx*.004;pitch=clamp(pitch-dy*.004,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}});
 window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse')mouseDragLook=false});
