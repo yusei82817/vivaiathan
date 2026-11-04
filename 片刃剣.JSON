@@ -1,0 +1,181 @@
+{
+  "format": "VOID_STOREHOUSE_MAP",
+  "version": 1,
+  "mapName": "武器・片刃剣",
+  "createdAt": "2026-11-04T03:15:57.757Z",
+  "editor": "VOID STOREHOUSE 3D MAP EDITOR",
+  "settings": {
+    "unit": "meter",
+    "gridSize": 1
+  },
+  "objects": [
+    {
+      "id": "obj_13",
+      "type": "cylinder",
+      "name": "Cylinder 13",
+      "color": "#787878",
+      "position": {
+        "x": 0,
+        "y": 1.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.5,
+        "y": 1.4,
+        "z": 0.5
+      }
+    },
+    {
+      "id": "obj_14",
+      "type": "cylinder",
+      "name": "Cylinder 14",
+      "color": "#7f3939",
+      "position": {
+        "x": 0,
+        "y": 0.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.7,
+        "y": 0.2,
+        "z": 0.7
+      }
+    },
+    {
+      "id": "obj_15",
+      "type": "cylinder",
+      "name": "Cylinder 15",
+      "color": "#ad001a",
+      "position": {
+        "x": 0,
+        "y": 2.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 0.1,
+        "z": 1
+      }
+    },
+    {
+      "id": "obj_16",
+      "type": "plane",
+      "name": "Plane 16",
+      "color": "#8a0000",
+      "position": {
+        "x": 0.5,
+        "y": 1.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 90
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 0.1
+      }
+    },
+    {
+      "id": "obj_17",
+      "type": "plane",
+      "name": "Plane 17",
+      "color": "#b8b8b8",
+      "position": {
+        "x": 0,
+        "y": 6.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": -90,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.3,
+        "y": 1,
+        "z": 3.9
+      }
+    },
+    {
+      "id": "obj_19",
+      "type": "plane",
+      "name": "Plane 17 Copy",
+      "color": "#b8b8b8",
+      "position": {
+        "x": 0,
+        "y": 11,
+        "z": 0
+      },
+      "rotation": {
+        "x": -90,
+        "y": 14.999999999999998,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.1,
+        "y": 1,
+        "z": 0.7
+      }
+    },
+    {
+      "id": "obj_20",
+      "type": "plane",
+      "name": "Plane 17 Copy Copy",
+      "color": "#b8b8b8",
+      "position": {
+        "x": 0.2,
+        "y": 11,
+        "z": 0
+      },
+      "rotation": {
+        "x": -90,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.1,
+        "y": 1,
+        "z": 0.7
+      }
+    },
+    {
+      "id": "obj_21",
+      "type": "plane",
+      "name": "Plane 17 Copy Copy Copy",
+      "color": "#b8b8b8",
+      "position": {
+        "x": 0.1,
+        "y": 10.2,
+        "z": 0
+      },
+      "rotation": {
+        "x": -90,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.2,
+        "y": 1,
+        "z": 0.7
+      }
+    }
+  ]
+}

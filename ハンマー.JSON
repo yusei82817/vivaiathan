@@ -1,0 +1,97 @@
+{
+  "format": "VOID_STOREHOUSE_MAP",
+  "version": 1,
+  "mapName": "武器・ハンマー",
+  "createdAt": "2026-11-04T03:10:43.327Z",
+  "editor": "VOID STOREHOUSE 3D MAP EDITOR",
+  "settings": {
+    "unit": "meter",
+    "gridSize": 1
+  },
+  "objects": [
+    {
+      "id": "obj_12",
+      "type": "cylinder",
+      "name": "Cylinder 12",
+      "color": "#000000",
+      "position": {
+        "x": 0,
+        "y": 7.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 90
+      },
+      "scale": {
+        "x": 3,
+        "y": 4,
+        "z": 3
+      }
+    },
+    {
+      "id": "obj_13",
+      "type": "cylinder",
+      "name": "Cylinder 13",
+      "color": "#787878",
+      "position": {
+        "x": 0,
+        "y": 5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.5,
+        "y": 7.2,
+        "z": 0.5
+      }
+    },
+    {
+      "id": "obj_14",
+      "type": "cylinder",
+      "name": "Cylinder 14",
+      "color": "#7f3939",
+      "position": {
+        "x": 0,
+        "y": 0.5,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.7,
+        "y": 0.2,
+        "z": 0.7
+      }
+    },
+    {
+      "id": "obj_15",
+      "type": "cylinder",
+      "name": "Cylinder 15",
+      "color": "#ad001a",
+      "position": {
+        "x": 0,
+        "y": 8.7,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      }
+    }
+  ]
+}
