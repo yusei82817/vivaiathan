@@ -199,8 +199,10 @@ function createDefaultAvatar(){
 }
 function updateCamera(){
  if(!camera||!playerRoot)return;
- const d=5.6,desired=new THREE.Vector3(playerRoot.position.x+Math.sin(yaw)*d,playerRoot.position.y+2.35+pitch*.75,playerRoot.position.z+Math.cos(yaw)*d);
- camera.position.lerp(desired,.22);camera.lookAt(playerRoot.position.x,playerRoot.position.y+1.22+pitch*1.1,playerRoot.position.z);
+ const d=5.4,shoulder=.65;
+ const desired=new THREE.Vector3(playerRoot.position.x+Math.sin(yaw)*d+Math.cos(yaw)*shoulder,playerRoot.position.y+2.35+pitch*.75,playerRoot.position.z+Math.cos(yaw)*d-Math.sin(yaw)*shoulder);
+ camera.position.lerp(desired,.22);
+ camera.lookAt(playerRoot.position.x-Math.sin(yaw)*9,playerRoot.position.y+1.35+pitch*2,playerRoot.position.z-Math.cos(yaw)*9);
 }
 async function loadAvatar(file){
  if(!file)return;
