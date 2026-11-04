@@ -390,6 +390,26 @@ function blockedAt(x,z,radius=.43){
  }
  return false;
 }
+// Sub-step movement and resolve axes separately to prevent tunnelling while
+// preserving wall sliding around corners.
+function movePlayerWithCollision(dx,dz,radius=.43){
+ const distance=Math.hypot(dx,dz),steps=Math.max(1,Math.ceil(distance/.16));
+ const stepX=dx/steps,stepZ=dz/steps;
+ let moved=false;
+ for(let i=0;i<steps;i++){
+  const nextX=clamp(playerRoot.position.x+stepX,-30+radius,30-radius);
+  if(!blockedAt(nextX,playerRoot.position.z,radius)){
+   if(nextX!==playerRoot.position.x)moved=true;
+   playerRoot.position.x=nextX;
+  }
+  const nextZ=clamp(playerRoot.position.z+stepZ,-30+radius,30-radius);
+  if(!blockedAt(playerRoot.position.x,nextZ,radius)){
+   if(nextZ!==playerRoot.position.z)moved=true;
+   playerRoot.position.z=nextZ;
+  }
+ }
+ return moved;
+}
 function updatePlayer(dt){
  const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
@@ -399,11 +419,8 @@ function updatePlayer(dt){
   move.normalize();const sprint=!!(keys.shift||keys.Shift)&&stamina>0;
   const speed=sprint?8.3:5.1;if(sprint)stamina=Math.max(0,stamina-29*dt);else stamina=Math.min(100,stamina+18*dt);
   const dx=move.x*speed*dt,dz=move.z*speed*dt;
-  const nextX=clamp(playerRoot.position.x+dx,-30,30);
-  if(!blockedAt(nextX,playerRoot.position.z))playerRoot.position.x=nextX;
-  const nextZ=clamp(playerRoot.position.z+dz,-30,30);
-  if(!blockedAt(playerRoot.position.x,nextZ))playerRoot.position.z=nextZ;
-  playerMoving=true;playerRoot.rotation.y=yaw;
+  playerMoving=movePlayerWithCollision(dx,dz);
+  playerRoot.rotation.y=yaw;
  }else{stamina=Math.min(100,stamina+21*dt);playerMoving=false}
  if(!grounded){
   playerRoot.position.y+=jumpVelocity*dt;jumpVelocity-=19.5*dt;
@@ -420,13 +437,13 @@ function enemyHasLineOfSight(enemy){
  return raycaster.intersectObjects(coverMeshes,false).length===0;
 }
 function chooseEnemyDirection(enemy,dx,dz,dist){
- const base=Math.atan2(dz,dx),step=Math.min(enemy.speed*.04,Math.max(.08,dist-1.05));
+ const base=Math.atan2(dz,dx),step=Math.min(enemy.speed/120,Math.max(.02,dist-1.05));
  const offsets=[0,.45,-.45,.9,-.9,1.35,-1.35,1.8,-1.8,2.35,-2.35,Math.PI];
  let best=null,bestScore=Infinity;
  for(const offset of offsets){
   const angle=base+offset,vx=Math.cos(angle),vz=Math.sin(angle);
   let clear=true;
-  for(const t of [.35,.7,1]){
+  for(const t of [.5,1]){
    if(blockedAt(enemy.group.position.x+vx*step*t,enemy.group.position.z+vz*step*t,.34)){clear=false;break}
   }
   if(!clear)continue;
@@ -480,20 +497,42 @@ function updateEffects(dt){
  shotFlash=Math.max(0,shotFlash-dt);damageFlash=Math.max(0,damageFlash-dt);toastTimer=Math.max(0,toastTimer-dt);$('damageVignette').style.opacity=String(Math.min(.85,damageFlash/.32*.72));
  $('toast').style.opacity=toastTimer>0?'1':'0';
 }
+const PHYSICS_STEP=1/120;
+let physicsAccumulator=0;
 function animate(now){
  requestAnimationFrame(animate);if(!worldReady)return;
- const dt=Math.min((now-lastTime)/1000||0,.04);lastTime=now;
+ const frameDt=Math.min((now-lastTime)/1000||0,.1);lastTime=now;
  if(active&&!paused){
-  elapsed+=dt;fireCooldown=Math.max(0,fireCooldown-dt);updatePlayer(dt);updateEffects(dt);
-  if(reloadTimer>0){reloadTimer-=dt;if(reloadTimer<=0){const n=Math.min(MAG-ammo,reserve);ammo+=n;reserve-=n;$('weaponState').textContent='SEMI-AUTO // READY';toast('MAGAZINE READY')}}
-  spawnTimer-=dt;if(spawned<WAVE_BASE+wave*2&&enemies.length<MAX_ACTIVE_ENEMIES&&spawnTimer<=0){enemies.push(makeEnemy());spawned++;spawnTimer=Math.max(.45,1.15-wave*.1)}
-  updateEnemies(dt);
-  if(health<=0){updateHud();finish(false)}
-  if(spawned>=WAVE_BASE+wave*2&&enemies.length===0&&active){
-   if(wave>=MAX_WAVE){updateHud();finish(true)}else{wave++;startWave()}
+  // Fixed 120 Hz simulation keeps movement and gravity independent of refresh rate.
+  physicsAccumulator+=frameDt;
+  while(physicsAccumulator>=PHYSICS_STEP&&active&&!paused){
+   const dt=PHYSICS_STEP;
+   elapsed+=dt;fireCooldown=Math.max(0,fireCooldown-dt);
+   updatePlayer(dt);
+   if(reloadTimer>0){
+    reloadTimer-=dt;
+    if(reloadTimer<=0){
+     const n=Math.min(MAG-ammo,reserve);ammo+=n;reserve-=n;
+     $('weaponState').textContent='SEMI-AUTO // READY';toast('MAGAZINE READY');
+    }
+   }
+   spawnTimer-=dt;
+   if(spawned<WAVE_BASE+wave*2&&enemies.length<MAX_ACTIVE_ENEMIES&&spawnTimer<=0){
+    enemies.push(makeEnemy());spawned++;spawnTimer=Math.max(.45,1.15-wave*.1);
+   }
+   updateEnemies(dt);
+   if(health<=0){updateHud();finish(false)}
+   if(spawned>=WAVE_BASE+wave*2&&enemies.length===0&&active){
+    if(wave>=MAX_WAVE){updateHud();finish(true)}
+    else{wave++;startWave()}
+   }
+   physicsAccumulator-=PHYSICS_STEP;
   }
-  updateHud();
- }else updateEffects(dt);
+  updateEffects(frameDt);updateHud();
+ }else{
+  physicsAccumulator=0;
+  updateEffects(frameDt);
+ }
  renderer.render(scene,camera);
 }
 function pointerLook(e){if(document.pointerLockElement===canvas){yaw-=e.movementX*.0022;pitch=clamp(pitch-e.movementY*.0022,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}}
