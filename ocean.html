@@ -98,7 +98,8 @@
         uUpper: { value: new THREE.Color('#087bea') },
         uHorizon: { value: new THREE.Color('#54c5f5') },
         uSunColor: { value: new THREE.Color('#fff2d2') },
-        uLightning: { value: 0 }
+        uLightning: { value: 0 },
+        uOvercast: { value: 0 }
       },
       vertexShader: `
         varying vec3 vSkyDirection;
@@ -114,6 +115,7 @@
         uniform vec3 uHorizon;
         uniform vec3 uSunColor;
         uniform float uLightning;
+        uniform float uOvercast;
         varying vec3 vSkyDirection;
 
         void main() {
@@ -125,7 +127,9 @@
           float sunDot = max(dot(direction, normalize(uSunDirection)), 0.0);
           float sunDisk = smoothstep(0.99935, 0.99982, sunDot);
           float sunHalo = pow(sunDot, 36.0) * 0.22;
-          skyColor = mix(skyColor, uSunColor, clamp(sunDisk + sunHalo, 0.0, 1.0));
+          skyColor = mix(skyColor, uSunColor, clamp(sunDisk + sunHalo, 0.0, 1.0) * (1.0 - uOvercast * 0.92));
+          vec3 overcastColor = vec3(0.39, 0.48, 0.56);
+          skyColor = mix(skyColor, overcastColor, uOvercast * (0.28 + height * 0.42));
           skyColor += vec3(0.72, 0.82, 1.0) * uLightning;
 
           gl_FragColor = vec4(skyColor, 1.0);
@@ -265,7 +269,8 @@
       }
     );
 
-    scene.add(new THREE.HemisphereLight(0xdff5ff, 0x24566a, 0.82));
+    const hemisphere = new THREE.HemisphereLight(0xdff5ff, 0x24566a, 0.82);
+    scene.add(hemisphere);
 
     const sunlight = new THREE.DirectionalLight(0xffedcf, 2.8);
     sunlight.position.copy(sun).multiplyScalar(500);
@@ -276,12 +281,12 @@
 
     // Weather presets are smoothly blended so the PV never hard-cuts.
     const weatherPresets = [
-      { name: 'CLEAR', sky: ['#0759cf', '#087bea', '#54c5f5'], sun: '#fff2d2', water: 0x086782, distortion: 3.8, waveSpeed: 1.0, cloud: 0.88, rain: 0, wind: 0, sea: 1, light: 1 },
-      { name: 'DRIZZLE', sky: ['#315f9b', '#5d91b8', '#9ab8c5'], sun: '#d5dfdf', water: 0x315f78, distortion: 4.3, waveSpeed: 1.12, cloud: 0.78, rain: 0.13, wind: 0.18, sea: 1.08, light: 0.78 },
-      { name: 'RAIN', sky: ['#344b70', '#536e8c', '#8299a8'], sun: '#aebdca', water: 0x294e64, distortion: 5.0, waveSpeed: 1.3, cloud: 0.94, rain: 0.38, wind: 0.38, sea: 1.22, light: 0.58 },
-      { name: 'DOWNPOUR', sky: ['#202f49', '#394f68', '#637b8b'], sun: '#8498a9', water: 0x1d4058, distortion: 6.4, waveSpeed: 1.65, cloud: 1.0, rain: 0.72, wind: 0.68, sea: 1.65, light: 0.38 },
-      { name: 'STORM + LIGHTNING', sky: ['#101a2b', '#26364a', '#46596a'], sun: '#64778a', water: 0x142f43, distortion: 8.2, waveSpeed: 2.15, cloud: 1.0, rain: 1, wind: 1, sea: 2.25, light: 0.24 },
-      { name: 'CLOUDY', sky: ['#53677c', '#8194a3', '#b2c1c9'], sun: '#c7d0d4', water: 0x3b6677, distortion: 4.0, waveSpeed: 0.92, cloud: 1.0, rain: 0, wind: 0.12, sea: 0.95, light: 0.68 }
+      { name: 'CLEAR', sky: ['#0759cf', '#087bea', '#54c5f5'], sun: '#fff2d2', water: 0x086782, distortion: 3.8, waveSpeed: 1.0, cloud: 0.88, overcast: 0.02, rain: 0, wind: 0, sea: 1, light: 1 },
+      { name: 'DRIZZLE', sky: ['#315f9b', '#5d91b8', '#9ab8c5'], sun: '#d5dfdf', water: 0x315f78, distortion: 4.3, waveSpeed: 1.12, cloud: 0.78, overcast: 0.28, rain: 0.13, wind: 0.18, sea: 1.08, light: 0.78 },
+      { name: 'RAIN', sky: ['#344b70', '#536e8c', '#8299a8'], sun: '#aebdca', water: 0x294e64, distortion: 5.0, waveSpeed: 1.3, cloud: 0.94, overcast: 0.52, rain: 0.38, wind: 0.38, sea: 1.22, light: 0.58 },
+      { name: 'DOWNPOUR', sky: ['#202f49', '#394f68', '#637b8b'], sun: '#8498a9', water: 0x1d4058, distortion: 6.4, waveSpeed: 1.65, cloud: 1.0, overcast: 0.78, rain: 0.72, wind: 0.68, sea: 1.65, light: 0.38 },
+      { name: 'STORM + LIGHTNING', sky: ['#101a2b', '#26364a', '#46596a'], sun: '#64778a', water: 0x142f43, distortion: 8.2, waveSpeed: 2.15, cloud: 1.0, overcast: 0.96, rain: 1, wind: 1, sea: 2.25, light: 0.24 },
+      { name: 'CLOUDY', sky: ['#53677c', '#8194a3', '#b2c1c9'], sun: '#c7d0d4', water: 0x3b6677, distortion: 4.0, waveSpeed: 0.92, cloud: 1.0, overcast: 0.78, rain: 0, wind: 0.12, sea: 0.95, light: 0.68 }
     ];
     const weatherName = document.getElementById('weather-name');
     const rainGeometry = new THREE.BufferGeometry();
@@ -336,6 +341,7 @@
         distortion: mix(a.distortion, b.distortion),
         waveSpeed: mix(a.waveSpeed, b.waveSpeed),
         cloud: mix(a.cloud, b.cloud),
+        overcast: mix(a.overcast, b.overcast),
         rain: mix(a.rain, b.rain),
         wind: mix(a.wind, b.wind),
         sea: mix(a.sea, b.sea),
@@ -398,6 +404,9 @@
       skyUniforms.uUpper.value.copy(weatherBlend.skyColors[1]);
       skyUniforms.uHorizon.value.copy(weatherBlend.skyColors[2]);
       skyUniforms.uSunColor.value.copy(weatherBlend.sunColor);
+      skyUniforms.uOvercast.value = weatherBlend.overcast;
+      hemisphere.intensity = 0.82 * weatherBlend.light;
+      sunlight.intensity = 2.8 * weatherBlend.light;
       water.material.uniforms.time.value += delta * weatherBlend.waveSpeed;
       water.material.uniforms.distortionScale.value = weatherBlend.distortion;
       water.material.uniforms.waterColor.value.copy(weatherBlend.waterColor);
