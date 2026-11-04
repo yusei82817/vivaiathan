@@ -212,8 +212,20 @@ async function loadAvatar(file){
  try{const data=await file.arrayBuffer();vrmLoader.parse(data,'',gltf=>{
   const next=gltf.userData.vrm;if(!next){$('avatarStatus').textContent='INVALID VRM FILE';$('avatarStatus').classList.add('error');return}
   if(avatarVRM)playerRoot.remove(avatarVRM.scene);if(avatarVisual)playerRoot.remove(avatarVisual);
-  avatarVRM=next;avatarVisual=next.scene;avatarVisual.rotation.y=Math.PI;playerRoot.add(avatarVisual);
-  avatarBones={leftUpperLeg:next.humanoid.getNormalizedBoneNode('leftUpperLeg'),rightUpperLeg:next.humanoid.getNormalizedBoneNode('rightUpperLeg'),leftUpperArm:next.humanoid.getNormalizedBoneNode('leftUpperArm'),rightUpperArm:next.humanoid.getNormalizedBoneNode('rightUpperArm')};
+  avatarVRM=next;avatarVisual=next.scene;
+  // VRM 0.x faces -Z; VRM 1.0 faces +Z. The game forward direction is -Z.
+  avatarVisual.rotation.y=next.meta?.metaVersion==='1.0'?Math.PI:0;
+  playerRoot.add(avatarVisual);
+  avatarBones={
+   leftUpperLeg:next.humanoid.getNormalizedBoneNode('leftUpperLeg'),rightUpperLeg:next.humanoid.getNormalizedBoneNode('rightUpperLeg'),
+   leftUpperArm:next.humanoid.getNormalizedBoneNode('leftUpperArm'),rightUpperArm:next.humanoid.getNormalizedBoneNode('rightUpperArm'),
+   leftLowerArm:next.humanoid.getNormalizedBoneNode('leftLowerArm'),rightLowerArm:next.humanoid.getNormalizedBoneNode('rightLowerArm')
+  };
+  // Lower the arms from the VRM rest T-pose into a relaxed ready stance.
+  if(avatarBones.leftUpperArm)avatarBones.leftUpperArm.rotation.z=1.12;
+  if(avatarBones.rightUpperArm)avatarBones.rightUpperArm.rotation.z=-1.12;
+  if(avatarBones.leftLowerArm)avatarBones.leftLowerArm.rotation.x=-.45;
+  if(avatarBones.rightLowerArm)avatarBones.rightLowerArm.rotation.x=-.45;
   $('avatarStatus').textContent='AVATAR READY // '+file.name.toUpperCase();
   if(playerWeapon)playerRoot.remove(playerWeapon);playerWeapon=new THREE.Group();playerRoot.add(playerWeapon);playerWeapon.position.set(.38,1.08,-.3);
   const gm=material(0x20292d,.48,.65),ge=material(0x59696b,.42,.7),gr=material(0x11191c);
@@ -318,7 +330,13 @@ function updateEffects(dt){
   gun.position.y=gun.userData.baseY+(shotFlash>0?-.035:0);
  }
  avatarWalkTime+=dt*(playerMoving?9:2);const swing=playerMoving?Math.sin(avatarWalkTime)*.48:Math.sin(avatarWalkTime)*.025;
- if(avatarVRM){if(avatarBones.leftUpperLeg)avatarBones.leftUpperLeg.rotation.x=swing;if(avatarBones.rightUpperLeg)avatarBones.rightUpperLeg.rotation.x=-swing;if(avatarBones.leftUpperArm)avatarBones.leftUpperArm.rotation.x=-swing*.35;if(avatarBones.rightUpperArm)avatarBones.rightUpperArm.rotation.x=swing*.25;avatarVRM.update(dt)}
+ if(avatarVRM){
+   if(avatarBones.leftUpperLeg)avatarBones.leftUpperLeg.rotation.x=swing;
+   if(avatarBones.rightUpperLeg)avatarBones.rightUpperLeg.rotation.x=-swing;
+   if(avatarBones.leftUpperArm){avatarBones.leftUpperArm.rotation.x=-swing*.2;avatarBones.leftUpperArm.rotation.z=1.12}
+   if(avatarBones.rightUpperArm){avatarBones.rightUpperArm.rotation.x=swing*.2;avatarBones.rightUpperArm.rotation.z=-1.12}
+   avatarVRM.update(dt)
+  }
  else if(fallbackLimbs.leftLeg){fallbackLimbs.leftLeg.rotation.x=swing;fallbackLimbs.rightLeg.rotation.x=-swing;fallbackLimbs.leftArm.rotation.x=-swing*.45;fallbackLimbs.rightArm.rotation.x=swing*.2}
  shotFlash=Math.max(0,shotFlash-dt);damageFlash=Math.max(0,damageFlash-dt);toastTimer=Math.max(0,toastTimer-dt);
  $('toast').style.opacity=toastTimer>0?'1':'0';
