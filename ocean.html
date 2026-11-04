@@ -314,8 +314,8 @@
         camera.lookAt(camera.position.x * 0.12, 2.5, -100);
       } else {
         const turnAmount = turnSpeed * delta;
-        if (pressedKeys.has('ArrowLeft')) cameraYaw += turnAmount;
-        if (pressedKeys.has('ArrowRight')) cameraYaw -= turnAmount;
+        if (pressedKeys.has('ArrowLeft')) cameraYaw -= turnAmount;
+        if (pressedKeys.has('ArrowRight')) cameraYaw += turnAmount;
         if (pressedKeys.has('ArrowUp')) cameraPitch = Math.min(1.2, cameraPitch + turnAmount);
         if (pressedKeys.has('ArrowDown')) cameraPitch = Math.max(-1.2, cameraPitch - turnAmount);
 
