@@ -45,6 +45,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { Water } from 'three/addons/objects/Water.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
     const canvas = document.getElementById('ocean');
     const loading = document.getElementById('loading');
@@ -215,6 +216,39 @@
     water.material.side = THREE.DoubleSide;
     scene.add(water);
 
+    // Distant CC0 Panamax container ship, loaded as a real external GLB asset.
+    // Source: Innerscene, "Container ship loaded" (CC0).
+    const shipGroup = new THREE.Group();
+    shipGroup.position.set(-250, -2.5, -1120);
+    scene.add(shipGroup);
+
+    const shipLoader = new GLTFLoader();
+    shipLoader.load(
+      'https://files.innerscene.com/library/container-ship-loaded-5ee3b06d/a4a2ad31200969166550/container-ship-loaded.glb',
+      (gltf) => {
+        const shipModel = gltf.scene;
+        shipModel.scale.setScalar(0.78);
+
+        let bounds = new THREE.Box3().setFromObject(shipModel);
+        let dimensions = bounds.getSize(new THREE.Vector3());
+
+        // Some authoring pipelines export Z-up geometry. Convert it to Three.js Y-up.
+        if (dimensions.z > dimensions.y) {
+          shipModel.rotation.x = -Math.PI / 2;
+          bounds = new THREE.Box3().setFromObject(shipModel);
+        }
+
+        const center = bounds.getCenter(new THREE.Vector3());
+        const bottom = bounds.min.y;
+        shipModel.position.set(-center.x, -bottom, -center.z);
+        shipGroup.add(shipModel);
+      },
+      undefined,
+      (error) => {
+        console.warn('VIVAIATHAN: external container ship model could not be loaded.', error);
+      }
+    );
+
     scene.add(new THREE.HemisphereLight(0xdff5ff, 0x24566a, 0.82));
 
     const sunlight = new THREE.DirectionalLight(0xffedcf, 2.8);
@@ -239,6 +273,9 @@
       const ascent = smoothstep01(t / ascentDuration);
 
       water.material.uniforms.time.value += delta;
+      shipGroup.position.y = -2.5 + Math.sin(t * 0.62) * 0.8;
+      shipGroup.rotation.z = Math.sin(t * 0.28) * 0.0025;
+      shipGroup.position.x = -250 + Math.sin(t * 0.035) * 8;
 
       // A slow cinematic ascent: submerged blue, a brief surface crossing,
       // then a calm reveal of the bright horizon.
