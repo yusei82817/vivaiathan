@@ -26,7 +26,7 @@ body{font-family:var(--body,Arial,sans-serif)}.field{position:relative;width:100
 .weapon{text-align:right;min-width:145px}.weapon small{color:var(--muted,#82949c);font-size:9px;letter-spacing:.13em}
 .crosshair{width:22px;height:22px;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;filter:drop-shadow(0 1px 3px #000)}
 .crosshair:before,.crosshair:after{content:"";position:absolute;background:#d8eeee}.crosshair:before{width:1px;height:20px;left:10px;top:1px}.crosshair:after{height:1px;width:20px;top:10px;left:1px}
-.crosshair.hit:before,.crosshair.hit:after{background:#e5a65e}.hit-marker{left:50%;top:50%;transform:translate(-50%,-50%);font:16px Arial;color:#e5a65e;opacity:0;pointer-events:none}
+.damage-vignette{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 42%,rgba(160,25,22,.62) 100%);opacity:0;transition:opacity .05s}.crosshair.hit:before,.crosshair.hit:after{background:#e5a65e}.hit-marker{left:50%;top:50%;transform:translate(-50%,-50%);font:16px Arial;color:#e5a65e;opacity:0;pointer-events:none}
 .notice{bottom:104px;left:50%;transform:translateX(-50%);text-align:center;color:#a0b0b5;font-size:9px;letter-spacing:.13em;white-space:nowrap;text-shadow:0 2px 5px #000;pointer-events:none}
 .toast{top:46%;left:50%;transform:translate(-50%,-50%);color:var(--amber,#d9a65b);font:700 12px var(--body,Arial);letter-spacing:.18em;text-shadow:0 2px 8px #000;opacity:0;pointer-events:none}
 .touch-controls{display:none;left:10px;right:10px;bottom:100px;justify-content:space-between;align-items:end;pointer-events:none}
@@ -70,7 +70,7 @@ body{font-family:var(--body,Arial,sans-serif)}.field{position:relative;width:100
 </div>
 <div class="objective"><div class="eyebrow">Primary objective</div><strong id="objectiveTitle">SECURE THE AREA</strong><p id="objectiveText">Clear five hostile waves in the abandoned industrial sector.</p></div>
 <button class="btn ghost exit" id="pauseBtn">Pause</button><button class="btn ghost exit" id="abortBtn" style="top:132px">Abort Operation</button>
-<div class="crosshair" id="crosshair"></div><div class="hit-marker" id="hitMarker">×</div>
+<div class="crosshair" id="crosshair"></div><div class="hit-marker" id="hitMarker">×</div><div class="damage-vignette" id="damageVignette"></div>
 <div class="toast" id="toast">HOSTILES DETECTED</div>
 <div class="notice" id="notice">WASD MOVE / MOUSE AIM UP + DOWN / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / ESC RELEASE MOUSE</div>
 <div class="hud-bottom">
@@ -106,7 +106,7 @@ let playerRoot,avatarVisual,avatarVRM=null,avatarBones={},fallbackLimbs={},playe
 let avatarWalkTime=0,playerMoving=false;
 const vrmLoader=new GLTFLoader();vrmLoader.register(parser=>new VRMLoaderPlugin(parser));
 let health=100,stamina=100,ammo=12,reserve=72,elapsed=0,wave=1,kills=0,spawned=0;
-let active=false,paused=false,ended=false,reloadTimer=0,spawnTimer=0,fireCooldown=0,damageFlash=0,toastTimer=0,shotFlash=0,hadPointerLock=false;
+let active=false,paused=false,ended=false,reloadTimer=0,spawnTimer=0,fireCooldown=0,damageFlash=0,playerHitCooldown=0,toastTimer=0,shotFlash=0,hadPointerLock=false;
 let yaw=0,pitch=0,firstPerson=true,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
 const collisionRects=[],coverMeshes=[];let jumpVelocity=0,grounded=true;
 const MAG=12,MAX_WAVE=5,WAVE_BASE=5,ARENA=31;
@@ -345,7 +345,7 @@ function clearEnemies(){for(const e of enemies)scene.remove(e.group);enemies=[]}
 function requestMouseLock(){if(matchMedia('(pointer:fine)').matches&&canvas.requestPointerLock){try{canvas.requestPointerLock()}catch(e){}}}
 function startGame(){
  if(!worldReady){toast('3D ENGINE INITIALIZING');return}
- clearEnemies();health=100;stamina=100;ammo=MAG;reserve=72;elapsed=0;wave=1;kills=0;spawned=0;ended=false;paused=false;active=true;reloadTimer=0;fireCooldown=0;keys={};
+ clearEnemies();health=100;stamina=100;ammo=MAG;reserve=72;elapsed=0;wave=1;kills=0;spawned=0;ended=false;paused=false;active=true;reloadTimer=0;fireCooldown=0;playerHitCooldown=0;keys={};
  playerRoot.position.set(0,0,8);jumpVelocity=0;grounded=true;yaw=0;pitch=0;playerRoot.rotation.y=0;updateCamera();startWave();overlay.classList.add('hidden');updateHud();lastTime=performance.now();requestMouseLock();
 }
 function finish(win){
@@ -440,6 +440,7 @@ function chooseEnemyDirection(enemy,dx,dz,dist){
  return best;
 }
 function updateEnemies(dt){
+ playerHitCooldown=Math.max(0,playerHitCooldown-dt);
  for(const e of enemies){
   const p=e.group.position,dx=playerRoot.position.x-p.x,dz=playerRoot.position.z-p.z,dist=Math.hypot(dx,dz);
   if(dist>1.25){
@@ -453,7 +454,7 @@ function updateEnemies(dt){
   e.arms[0].rotation.x=-gait*.45-.18;e.arms[1].rotation.x=gait*.45-.28;
   e.rig.rotation.z=Math.sin(e.walk*.5)*.035;e.rig.rotation.x=-.07+drag*.08;
   e.attack-=dt;
-  if(dist<1.65&&e.attack<=0&&enemyHasLineOfSight(e)){health=Math.max(0,health-8);damageFlash=.32;e.attack=.85;toast('OPERATOR HIT')}
+  if(dist<1.65&&e.attack<=0&&enemyHasLineOfSight(e)){if(playerHitCooldown<=0){health=Math.max(0,health-8);damageFlash=.32;playerHitCooldown=.62;toast('OPERATOR HIT')}e.attack=.85}
  }
 }
 function updateEffects(dt){
@@ -471,7 +472,7 @@ function updateEffects(dt){
    avatarVRM.update(dt)
   }
  else if(fallbackLimbs.leftLeg){fallbackLimbs.leftLeg.rotation.x=swing;fallbackLimbs.rightLeg.rotation.x=-swing;fallbackLimbs.leftArm.rotation.x=-swing*.45;fallbackLimbs.rightArm.rotation.x=swing*.2}
- shotFlash=Math.max(0,shotFlash-dt);damageFlash=Math.max(0,damageFlash-dt);toastTimer=Math.max(0,toastTimer-dt);
+ shotFlash=Math.max(0,shotFlash-dt);damageFlash=Math.max(0,damageFlash-dt);toastTimer=Math.max(0,toastTimer-dt);$('damageVignette').style.opacity=String(Math.min(.85,damageFlash/.32*.72));
  $('toast').style.opacity=toastTimer>0?'1':'0';
 }
 function animate(now){
