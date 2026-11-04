@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#83cce5">
+  <title>VIVAIATHAN // Ocean</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #83cce5; }
+    body { position: relative; }
+    #ocean { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    .loading {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      color: rgba(12, 48, 65, .72); font: 600 10px Arial, sans-serif;
+      letter-spacing: .24em; pointer-events: none; transition: opacity .7s ease;
+    }
+    .loading.done { opacity: 0; }
+    @media (prefers-reduced-motion: reduce) {
+      .loading { transition: none; }
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="ocean" aria-label="Animated open ocean"></canvas>
+  <div class="loading" id="loading">INITIALIZING OCEAN</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { Water } from 'three/addons/objects/Water.js';
+    import { Sky } from 'three/addons/objects/Sky.js';
+
+    const canvas = document.getElementById('ocean');
+    const loading = document.getElementById('loading');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 20000);
+    camera.position.set(0, 17, 82);
+    camera.lookAt(0, 3, -100);
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance'
+    });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.72;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const sky = new Sky();
+    sky.scale.setScalar(10000);
+    scene.add(sky);
+
+    const skyUniforms = sky.material.uniforms;
+    skyUniforms.turbidity.value = 7;
+    skyUniforms.rayleigh.value = 2.4;
+    skyUniforms.mieCoefficient.value = 0.006;
+    skyUniforms.mieDirectionalG.value = 0.82;
+
+    const sun = new THREE.Vector3();
+    sun.setFromSphericalCoords(
+      1,
+      THREE.MathUtils.degToRad(82),
+      THREE.MathUtils.degToRad(205)
+    );
+    skyUniforms.sunPosition.value.copy(sun);
+
+    const waterNormals = new THREE.TextureLoader().load(
+      'https://threejs.org/examples/textures/waternormals.jpg',
+      () => loading.classList.add('done'),
+      undefined,
+      () => loading.classList.add('done')
+    );
+    waterNormals.wrapS = THREE.RepeatWrapping;
+    waterNormals.wrapT = THREE.RepeatWrapping;
+
+    const water = new Water(new THREE.PlaneGeometry(12000, 12000), {
+      textureWidth: 768,
+      textureHeight: 768,
+      waterNormals,
+      sunDirection: sun.clone().normalize(),
+      sunColor: 0xffffff,
+      waterColor: 0x07516c,
+      distortionScale: 4.2,
+      fog: false,
+      alpha: 1
+    });
+    water.rotation.x = -Math.PI / 2;
+    scene.add(water);
+
+    scene.add(new THREE.HemisphereLight(0xd9f5ff, 0x18394a, 0.65));
+
+    const sunlight = new THREE.DirectionalLight(0xffe6c2, 2.2);
+    sunlight.position.copy(sun).multiplyScalar(500);
+    scene.add(sunlight);
+
+    const clock = new THREE.Clock();
+    const baseX = camera.position.x;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = Math.min(clock.getDelta(), 0.04);
+      const t = clock.elapsedTime;
+
+      water.material.uniforms.time.value += delta;
+      camera.position.x = baseX + Math.sin(t * 0.11) * 1.2;
+      camera.position.y = 17 + Math.sin(t * 0.18) * 0.45;
+      camera.lookAt(camera.position.x * 0.15, 3, -100);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    setTimeout(() => loading.classList.add('done'), 5000);
+  </script>
+</body>
+</html>
