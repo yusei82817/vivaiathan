@@ -499,7 +499,6 @@ function animate(now){
 function pointerLook(e){if(document.pointerLockElement===canvas){yaw-=e.movementX*.0022;pitch=clamp(pitch-e.movementY*.0022,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}}
 document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===canvas;$('notice').textContent=locked?'WASD MOVE / MOUSE AIM / RMB ADS / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE':'CLICK FIELD TO CAPTURE CAMERA // ESC TO PAUSE';if(active&&hadPointerLock&&!locked)pauseGame();hadPointerLock=locked});
 document.addEventListener('mousemove',pointerLook);
-canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&active){if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY;fire();requestMouseLock()}else fire()}});
 window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2&&active&&!paused){aiming=true;if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY}}});
 window.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===2){aiming=false;mouseDragLook=false}});
