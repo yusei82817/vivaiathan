@@ -395,7 +395,7 @@ function makeEnemy(){
 function updateHud(){
  $('health').textContent=Math.ceil(health);$('stamina').textContent=Math.ceil(stamina);
  $('healthBar').style.width=clamp(health,0,100)+'%';$('staminaBar').style.width=clamp(stamina,0,100)+'%';
- $('ammo').textContent=ammo+' / '+reserve;$('wave').textContent=String(wave).padStart(2,'0')+' / 05';
+ $('ammo').textContent=activeWeapon==='gun'?ammo+' / '+reserve:'MELEE';$('wave').textContent=String(wave).padStart(2,'0')+' / 05';
  $('hostiles').textContent=String(enemies.length+Math.max(0,WAVE_BASE+wave*2-spawned)).padStart(2,'0');
  $('clock').textContent=String(Math.floor(elapsed/60)).padStart(2,'0')+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
 }
@@ -618,7 +618,7 @@ function animate(now){
  renderer.render(scene,camera);
 }
 function pointerLook(e){if(document.pointerLockElement===canvas){yaw-=e.movementX*.0022;pitch=clamp(pitch-e.movementY*.0022,-.48,.55);playerRoot.rotation.y=yaw;updateCamera()}}
-document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===canvas;$('notice').textContent=locked?'WASD MOVE / MOUSE AIM / RMB ADS / SPACE JUMP / FIRE / R RELOAD / SHIFT SPRINT / V VIEW / P PAUSE':'CLICK FIELD TO CAPTURE CAMERA // ESC TO PAUSE';if(active&&hadPointerLock&&!locked)pauseGame();hadPointerLock=locked});
+document.addEventListener('pointerlockchange',()=>{const locked=document.pointerLockElement===canvas;$('notice').textContent=locked?'WASD MOVE / MOUSE AIM / 1 GUN / 2 HAMMER / 3 SWORD / R RELOAD / V VIEW / P PAUSE':'CLICK FIELD TO CAPTURE CAMERA // ESC TO PAUSE';if(active&&hadPointerLock&&!locked)pauseGame();hadPointerLock=locked});
 document.addEventListener('mousemove',pointerLook);
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===0&&active){if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY;fire();requestMouseLock()}else fire()}});
 window.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button===2&&active&&!paused){aiming=true;if(!document.pointerLockElement){mouseDragLook=true;lastPointerX=e.clientX;lastPointerY=e.clientY}}});
