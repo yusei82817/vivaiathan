@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#83cce5">
+  <meta name="theme-color" content="#58b8ef">
   <title>VIVAIATHAN // Ocean</title>
   <style>
     * { box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #83cce5; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #58b8ef; }
     body { position: relative; }
     #ocean { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     #underwater {
@@ -64,7 +64,7 @@
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
     renderer.setSize(innerWidth, innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.72;
+    renderer.toneMappingExposure = 0.98;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const sky = new Sky();
@@ -72,18 +72,43 @@
     scene.add(sky);
 
     const skyUniforms = sky.material.uniforms;
-    skyUniforms.turbidity.value = 7;
-    skyUniforms.rayleigh.value = 2.4;
-    skyUniforms.mieCoefficient.value = 0.006;
-    skyUniforms.mieDirectionalG.value = 0.82;
+    skyUniforms.turbidity.value = 2.1;
+    skyUniforms.rayleigh.value = 2.8;
+    skyUniforms.mieCoefficient.value = 0.0035;
+    skyUniforms.mieDirectionalG.value = 0.78;
 
     const sun = new THREE.Vector3();
     sun.setFromSphericalCoords(
       1,
-      THREE.MathUtils.degToRad(82),
+      THREE.MathUtils.degToRad(48),
       THREE.MathUtils.degToRad(205)
     );
     skyUniforms.sunPosition.value.copy(sun);
+
+    // A soft atmospheric halo reinforces the sun disk rendered by Sky.
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = glowCanvas.height = 256;
+    const glowContext = glowCanvas.getContext('2d');
+    const glowGradient = glowContext.createRadialGradient(128, 128, 5, 128, 128, 128);
+    glowGradient.addColorStop(0, 'rgba(255, 248, 225, 0.9)');
+    glowGradient.addColorStop(0.16, 'rgba(255, 232, 184, 0.34)');
+    glowGradient.addColorStop(0.48, 'rgba(255, 220, 160, 0.09)');
+    glowGradient.addColorStop(1, 'rgba(255, 220, 160, 0)');
+    glowContext.fillStyle = glowGradient;
+    glowContext.fillRect(0, 0, 256, 256);
+    const sunGlowTexture = new THREE.CanvasTexture(glowCanvas);
+    const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: sunGlowTexture,
+      color: 0xfff0d5,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false
+    }));
+    sunGlow.position.copy(sun).multiplyScalar(7800);
+    sunGlow.scale.set(1250, 1250, 1);
+    scene.add(sunGlow);
+
 
     const waterNormals = new THREE.TextureLoader().load(
       'https://threejs.org/examples/textures/waternormals.jpg',
@@ -99,9 +124,9 @@
       textureHeight: 768,
       waterNormals,
       sunDirection: sun.clone().normalize(),
-      sunColor: 0xffffff,
-      waterColor: 0x07516c,
-      distortionScale: 4.2,
+      sunColor: 0xfff2d8,
+      waterColor: 0x086782,
+      distortionScale: 3.8,
       fog: false,
       alpha: 1
     });
@@ -110,9 +135,9 @@
     water.material.side = THREE.DoubleSide;
     scene.add(water);
 
-    scene.add(new THREE.HemisphereLight(0xd9f5ff, 0x18394a, 0.65));
+    scene.add(new THREE.HemisphereLight(0xdff5ff, 0x24566a, 0.82));
 
-    const sunlight = new THREE.DirectionalLight(0xffe6c2, 2.2);
+    const sunlight = new THREE.DirectionalLight(0xffedcf, 2.8);
     sunlight.position.copy(sun).multiplyScalar(500);
     scene.add(sunlight);
 
