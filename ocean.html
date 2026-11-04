@@ -65,7 +65,7 @@
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
     renderer.setSize(innerWidth, innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.98;
+    renderer.toneMappingExposure = 1.12;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const sky = new Sky();
@@ -73,10 +73,10 @@
     scene.add(sky);
 
     const skyUniforms = sky.material.uniforms;
-    skyUniforms.turbidity.value = 2.1;
-    skyUniforms.rayleigh.value = 2.8;
-    skyUniforms.mieCoefficient.value = 0.0035;
-    skyUniforms.mieDirectionalG.value = 0.78;
+    skyUniforms.turbidity.value = 1.15;
+    skyUniforms.rayleigh.value = 3.7;
+    skyUniforms.mieCoefficient.value = 0.0018;
+    skyUniforms.mieDirectionalG.value = 0.72;
 
     const sun = new THREE.Vector3();
     sun.setFromSphericalCoords(
@@ -85,6 +85,48 @@
       THREE.MathUtils.degToRad(205)
     );
     skyUniforms.sunPosition.value.copy(sun);
+
+    // Soft white summer cumulus clouds, kept near the horizon.
+    const cloudCanvas = document.createElement('canvas');
+    cloudCanvas.width = 512;
+    cloudCanvas.height = 256;
+    const cloudCtx = cloudCanvas.getContext('2d');
+    cloudCtx.clearRect(0, 0, 512, 256);
+    const cloudPuffs = [
+      [90, 164, 90, 54], [158, 132, 92, 78], [236, 150, 108, 76],
+      [320, 164, 92, 58], [395, 180, 70, 42], [190, 190, 170, 36]
+    ];
+    for (const [x, y, rx, ry] of cloudPuffs) {
+      const puff = cloudCtx.createRadialGradient(x, y - ry * 0.12, 2, x, y, Math.max(rx, ry));
+      puff.addColorStop(0, 'rgba(255,255,255,0.96)');
+      puff.addColorStop(0.58, 'rgba(255,255,255,0.82)');
+      puff.addColorStop(1, 'rgba(255,255,255,0)');
+      cloudCtx.fillStyle = puff;
+      cloudCtx.beginPath();
+      cloudCtx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      cloudCtx.fill();
+    }
+    const cloudTexture = new THREE.CanvasTexture(cloudCanvas);
+    cloudTexture.colorSpace = THREE.SRGBColorSpace;
+    const cloudMaterial = new THREE.SpriteMaterial({
+      map: cloudTexture,
+      transparent: true,
+      opacity: 0.88,
+      depthWrite: false,
+      fog: false
+    });
+    const cloudSpecs = [
+      [-2500, 330, -3900, 1500, 750],
+      [250, 250, -4600, 1750, 820],
+      [2850, 430, -4100, 1450, 700],
+      [-900, 620, -6200, 1100, 520]
+    ];
+    for (const [x, y, z, width, height] of cloudSpecs) {
+      const cloud = new THREE.Sprite(cloudMaterial);
+      cloud.position.set(x, y, z);
+      cloud.scale.set(width, height, 1);
+      scene.add(cloud);
+    }
 
     // A soft atmospheric halo reinforces the sun disk rendered by Sky.
     const glowCanvas = document.createElement('canvas');
