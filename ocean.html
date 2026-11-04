@@ -415,8 +415,9 @@
       cloudSprites.forEach((cloud, index) => {
         cloud.position.x += delta * (3 + weatherBlend.wind * 18) * (index % 2 ? -1 : 1);
       });
-      rainMaterial.opacity = weatherBlend.rain * 0.78;
+      rainMaterial.opacity = weatherBlend.rain > 0.02 ? 0.78 : 0;
       rainMaterial.size = 1.15 + weatherBlend.rain * 1.25;
+      rainGeometry.setDrawRange(0, Math.floor(rainCount * weatherBlend.rain));
       rainField.visible = weatherBlend.rain > 0.015;
       rainField.position.set(camera.position.x, 0, camera.position.z);
       for (let i = 0; i < rainCount; i++) {
