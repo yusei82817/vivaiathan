@@ -318,6 +318,7 @@ function makeEnemy(){
   if(!blockedAt(tx,tz,.42)){spawnX=tx;spawnZ=tz;spawnFound=true;break}
  }
  if(!spawnFound){spawnX=clamp(playerRoot.position.x+rand(-22,22),-ARENA+3,ARENA-3);spawnZ=clamp(playerRoot.position.z+rand(-22,22),-ARENA+3,ARENA-3)}
+ root.position.set(spawnX,0,spawnZ);
  const hp=wave>=4?2:1;
  scene.add(root);
  return {group:root,rig,arms,legs,hp,speed:rand(1.05,1.5)+wave*.12,attack:rand(.1,.6),phase:rand(0,6.28),walk:rand(0,6.28)};
@@ -355,7 +356,7 @@ function fire(){
  ammo--;fireCooldown=.24;shotFlash=.09;
  const gun=playerWeapon;
  if(gun){gun.userData.muzzleLight.intensity=8;gun.userData.flash.visible=true;gun.userData.flash.scale.setScalar(rand(.8,1.3))}
- raycaster.setFromCamera(center,camera);
+ raycaster.setFromCamera(center,camera);raycaster.near=0;raycaster.far=100;
  const hitTargets=[];
  for(const e of enemies){e.group.traverse(o=>{if(o.isMesh)hitTargets.push(o)})}
  const hits=raycaster.intersectObjects(hitTargets,false);
