@@ -82,7 +82,7 @@ body{font-family:var(--body,Arial,sans-serif)}.field{position:relative;width:100
 </div>
 <div class="touch-controls">
  <div class="pad"><button class="touch-btn up" data-key="w">▲</button><button class="touch-btn left" data-key="a">◀</button><button class="touch-btn down" data-key="s">▼</button><button class="touch-btn right" data-key="d">▶</button></div>
- <div class="touch-actions"><button class="touch-btn" id="touchReload">RELOAD</button><button class="touch-btn" id="touchFire">FIRE</button><button class="touch-btn" id="touchJump">JUMP</button><button class="touch-btn" data-key="shift">RUN</button></div>
+ <div class="touch-actions"><button class="touch-btn" id="touchReload">RELOAD</button><button class="touch-btn" id="touchFire">FIRE</button><button class="touch-btn" id="touchJump">JUMP</button><button class="touch-btn" id="touchView">VIEW</button><button class="touch-btn" data-key="shift">RUN</button></div>
 </div>
 <div class="overlay" id="overlay">
  <div class="overlay-card"><div class="overlay-kicker" id="overlayKicker">VIVAIATHAN // THREE-DIMENSIONAL FIELD TEST</div><h1 id="overlayTitle">SECTOR 07</h1>
@@ -107,7 +107,7 @@ let avatarWalkTime=0,playerMoving=false;
 const vrmLoader=new GLTFLoader();vrmLoader.register(parser=>new VRMLoaderPlugin(parser));
 let health=100,stamina=100,ammo=12,reserve=72,elapsed=0,wave=1,kills=0,spawned=0;
 let active=false,paused=false,ended=false,reloadTimer=0,spawnTimer=0,fireCooldown=0,damageFlash=0,toastTimer=0,shotFlash=0,hadPointerLock=false;
-let yaw=0,pitch=0,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
+let yaw=0,pitch=0,firstPerson=true,keys={},enemies=[],tracers=[],lastTime=0,playerVelocity=new THREE.Vector3();
 const collisionRects=[],coverMeshes=[];let jumpVelocity=0,grounded=true;
 const MAG=12,MAX_WAVE=5,WAVE_BASE=5,ARENA=31;
 const raycaster=new THREE.Raycaster(),center=new THREE.Vector2(0,0);
@@ -178,7 +178,7 @@ function init3D(){
  box(playerWeapon,0,.13,-.05,.09,.035,.12,gripMat);
  const muzzleLight=new THREE.PointLight(0xffc47b,0,5);muzzleLight.position.set(0,.03,-.55);playerWeapon.add(muzzleLight);
  const flash=new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),new THREE.MeshBasicMaterial({color:0xffd08a}));flash.position.copy(muzzleLight.position);flash.visible=false;playerWeapon.add(flash);
- playerWeapon.userData={muzzleLight,flash,baseY:1.08};updateCamera();
+ playerWeapon.userData={muzzleLight,flash,baseY:1.08,baseZ:-.3};updateCamera();
  resize();
  worldReady=true;
 }
@@ -204,6 +204,15 @@ function createDefaultAvatar(){
 }
 function updateCamera(){
  if(!camera||!playerRoot)return;
+ if(firstPerson){
+  if(avatarVisual)avatarVisual.visible=false;
+  camera.position.set(playerRoot.position.x,playerRoot.position.y+1.58,playerRoot.position.z);
+  camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;camera.rotation.z=0;
+  if(playerWeapon&&playerWeapon.parent!==camera){playerWeapon.parent?.remove(playerWeapon);camera.add(playerWeapon);playerWeapon.position.set(.34,-.28,-.58);playerWeapon.userData.baseY=-.28;playerWeapon.userData.baseZ=-.58}
+  return;
+ }
+ if(avatarVisual)avatarVisual.visible=true;
+ if(playerWeapon&&playerWeapon.parent!==playerRoot){playerWeapon.parent?.remove(playerWeapon);playerRoot.add(playerWeapon);playerWeapon.position.set(.38,1.08,-.3);playerWeapon.userData.baseY=1.08;playerWeapon.userData.baseZ=-.3}
  const d=5.4,shoulder=.65,cp=Math.cos(pitch);
  const desired=new THREE.Vector3(playerRoot.position.x+Math.sin(yaw)*d*cp+Math.cos(yaw)*shoulder,playerRoot.position.y+2.35-Math.sin(pitch)*d,playerRoot.position.z+Math.cos(yaw)*d*cp-Math.sin(yaw)*shoulder);
  camera.position.lerp(desired,.28);
@@ -238,7 +247,7 @@ async function loadAvatar(file){
   cylinder(playerWeapon,0,.035,-.39,.035,.035,.22,ge,12).rotation.x=Math.PI/2;
   const light=new THREE.PointLight(0xffc47b,0,5);light.position.set(0,.03,-.55);playerWeapon.add(light);
   const flash=new THREE.Mesh(new THREE.SphereGeometry(.07,8,8),new THREE.MeshBasicMaterial({color:0xffd08a}));flash.position.copy(light.position);flash.visible=false;playerWeapon.add(flash);
-  playerWeapon.userData={muzzleLight:light,flash,baseY:1.08};
+  playerWeapon.userData={muzzleLight:light,flash,baseY:1.08,baseZ:-.3};
  },err=>{console.error(err);$('avatarStatus').textContent='VRM LOAD FAILED // CHECK THE FILE';$('avatarStatus').classList.add('error')})}
  catch(err){console.error(err);$('avatarStatus').textContent='VRM LOAD FAILED // '+err.message;$('avatarStatus').classList.add('error')}
 }
@@ -451,7 +460,7 @@ function updateEffects(dt){
  if(!camera)return;
  const gun=playerWeapon;
  if(gun){const light=gun.userData.muzzleLight;light.intensity=Math.max(0,light.intensity-dt*100);if(light.intensity===0)gun.userData.flash.visible=false;
-  gun.position.y=gun.userData.baseY+(shotFlash>0?-.035:0);
+  gun.position.y=gun.userData.baseY+(shotFlash>0?-.035:0);gun.position.z=gun.userData.baseZ+(shotFlash>0 ? .055 : 0);
  }
  avatarWalkTime+=dt*(playerMoving?9:2);const swing=playerMoving?Math.sin(avatarWalkTime)*.48:Math.sin(avatarWalkTime)*.025;
  if(avatarVRM){
@@ -486,7 +495,7 @@ document.addEventListener('pointerlockchange',()=>{const locked=document.pointer
 document.addEventListener('mousemove',pointerLook);
 canvas.addEventListener('click',()=>{if(active&&!document.pointerLockElement)requestMouseLock()});
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&active){if(!document.pointerLockElement)requestMouseLock();else fire()}});
-window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d','shift','r',' '].includes(k))e.preventDefault();if(k==='escape'&&active&&!paused){pauseGame();return}if(k==='p'&&active){paused?resumeGame():pauseGame();return}if(paused)return;keys[k]=true;if(k==='r')reload();if(k===' '&&active&&!e.repeat&&grounded){jumpVelocity=7.2;grounded=false;keys[' ']=false}});
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d','shift','r',' '].includes(k))e.preventDefault();if(k==='escape'&&active&&!paused){pauseGame();return}if(k==='p'&&active){paused?resumeGame():pauseGame();return}if(paused)return;if(k==='v'){firstPerson=!firstPerson;updateCamera();toast(firstPerson?'FIRST PERSON VIEW':'THIRD PERSON VIEW');return}keys[k]=true;if(k==='r')reload();if(k===' '&&active&&!e.repeat&&grounded){jumpVelocity=7.2;grounded=false;keys[' ']=false}});
 window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 window.addEventListener('blur',()=>{keys={}});
 canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&active){if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);canvas.dataset.lookX=e.clientX;canvas.dataset.lookY=e.clientY}});
@@ -497,6 +506,7 @@ document.querySelectorAll('[data-key]').forEach(btn=>{
 });
 $('touchReload').addEventListener('click',reload);$('touchFire').addEventListener('pointerdown',e=>{e.preventDefault();fire()});
 $('touchJump').addEventListener('pointerdown',e=>{e.preventDefault();if(active&&!paused&&grounded){jumpVelocity=7.2;grounded=false}});
+$('touchView').addEventListener('click',()=>{firstPerson=!firstPerson;updateCamera();toast(firstPerson?'FIRST PERSON VIEW':'THIRD PERSON VIEW')});
 function pauseGame(){if(!active||paused)return;paused=true;keys={};overlay.classList.remove('hidden');$('overlayKicker').textContent='OPERATION PAUSED';$('overlayTitle').textContent='FIELD HOLD';$('overlayText').textContent='Simulation suspended. Resume to continue the current wave.';$('startBtn').textContent='RESUME OPERATION';if(document.pointerLockElement)document.exitPointerLock()}
 function resumeGame(){if(!active||!paused)return;paused=false;overlay.classList.add('hidden');$('startBtn').textContent='INITIALIZE OPERATION';lastTime=performance.now();requestMouseLock()}
 $('pauseBtn').addEventListener('click',pauseGame);
